@@ -1,0 +1,10 @@
+{
+  "sessionCount": 1,
+  "lastSession": {
+    "startedAt": "2026-04-04T08:15:47.515Z",
+    "platform": "claude",
+    "level": "Dynamic"
+  },
+  "currentFeature": "news-ingestion",
+  "phase": "design"
+}
