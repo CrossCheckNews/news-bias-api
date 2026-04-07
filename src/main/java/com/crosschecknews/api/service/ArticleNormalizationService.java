@@ -133,19 +133,31 @@ public class ArticleNormalizationService {
 
     private String sanitizeHtml(String html) {
         if (html == null || html.isBlank()) return null;
-        return html
+        String result = html
                 .replaceAll("<[^>]+>", "")
                 .replaceAll("&nbsp;", " ")
+                .replaceAll("&apos;", "'")
+                .replaceAll("&#39;", "'")
                 .replaceAll("&amp;", "&")
                 .replaceAll("&lt;", "<")
                 .replaceAll("&gt;", ">")
                 .replaceAll("&quot;", "\"")
                 .replaceAll("\\s{2,}", " ")
                 .trim();
+        // 한겨례처럼 이미지 태그만 있어 제거 후 텍스트가 없는 경우 null 반환
+        return result.isBlank() ? null : result;
     }
 
     private String sanitizeText(String text) {
         if (text == null) return null;
-        return text.replaceAll("\\s{2,}", " ").trim();
+        return text
+                .replaceAll("&apos;", "'")
+                .replaceAll("&#39;", "'")
+                .replaceAll("&amp;", "&")
+                .replaceAll("&lt;", "<")
+                .replaceAll("&gt;", ">")
+                .replaceAll("&quot;", "\"")
+                .replaceAll("\\s{2,}", " ")
+                .trim();
     }
 }

@@ -21,7 +21,7 @@ public class RssFetchService {
         try {
             SyndFeedInput input = new SyndFeedInput();
             SyndFeed feed = input.build(new XmlReader(new URL(rssUrl)));
-            // 아이템에 날짜가 없는 피드(한겨레 등)를 위해 채널 레벨 날짜를 fallback으로 전달
+            // 아이템에 날짜가 없는 피드(한겨레 등)를 위 해 채널 레벨 날짜를 fallback으로 전달
             LocalDateTime feedLevelDate = toLocalDateTime(feed.getPublishedDate());
             return feed.getEntries().stream()
                     .map(entry -> toRssEntry(entry, feedLevelDate))
@@ -43,9 +43,13 @@ public class RssFetchService {
                 ? toLocalDateTime(rawDate)
                 : feedLevelDate;
 
+        // 1순위: <description> (비어 있으면 무시)
+        // 2순위: <content:encoded> — 조선일보처럼 description이 비어있고 content:encoded에 본문이 있는 경우
         String description = null;
-        if (entry.getDescription() != null) {
+        if (entry.getDescription() != null && !entry.getDescription().getValue().isBlank()) {
             description = entry.getDescription().getValue();
+        } else if (!entry.getContents().isEmpty()) {
+            description = entry.getContents().get(0).getValue();
         }
 
         // guid: RSS <guid> 또는 Atom <id> — 없으면 link로 fallback

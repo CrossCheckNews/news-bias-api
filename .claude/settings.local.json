@@ -5,7 +5,9 @@
       "mcp__plugin_bkit_bkit-pdca__bkit_pdca_status",
       "Bash(./gradlew test:*)",
       "Skill(bkit:pdca)",
-      "Bash(./gradlew compileJava)"
+      "Bash(./gradlew compileJava)",
+      "Bash(curl -s \"https://www.chosun.com/arc/outboundfeeds/rss/category/international/?outputType=xml\")",
+      "Bash(curl -s \"https://www.hani.co.kr/rss/international\")"
     ]
   }
 }
