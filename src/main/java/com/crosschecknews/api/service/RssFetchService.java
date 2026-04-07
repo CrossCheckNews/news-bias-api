@@ -21,8 +21,10 @@ public class RssFetchService {
         try {
             SyndFeedInput input = new SyndFeedInput();
             SyndFeed feed = input.build(new XmlReader(new URL(rssUrl)));
+            // 아이템에 날짜가 없는 피드(한겨레 등)를 위해 채널 레벨 날짜를 fallback으로 전달
+            LocalDateTime feedLevelDate = toLocalDateTime(feed.getPublishedDate());
             return feed.getEntries().stream()
-                    .map(this::toRssEntry)
+                    .map(entry -> toRssEntry(entry, feedLevelDate))
                     .filter(e -> e.link() != null && !e.link().isBlank())
                     .toList();
         } catch (Exception e) {
@@ -30,14 +32,16 @@ public class RssFetchService {
         }
     }
 
-    private RssEntry toRssEntry(SyndEntry entry) {
-        LocalDateTime publishedAt = null;
-        if (entry.getPublishedDate() != null) {
-            publishedAt = entry.getPublishedDate()
-                    .toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDateTime();
-        }
+    private RssEntry toRssEntry(SyndEntry entry, LocalDateTime feedLevelDate) {
+        // 1순위: 아이템 <pubDate> / Atom <published>
+        // 2순위: 아이템 <updated>
+        // 3순위: 채널 <lastBuildDate> (한겨레처럼 아이템 날짜가 없는 피드)
+        var rawDate = entry.getPublishedDate() != null
+                ? entry.getPublishedDate()
+                : entry.getUpdatedDate();
+        LocalDateTime publishedAt = rawDate != null
+                ? toLocalDateTime(rawDate)
+                : feedLevelDate;
 
         String description = null;
         if (entry.getDescription() != null) {
@@ -48,6 +52,11 @@ public class RssFetchService {
         String guid = entry.getUri() != null ? entry.getUri() : entry.getLink();
 
         return new RssEntry(entry.getTitle(), entry.getLink(), description, guid, publishedAt);
+    }
+
+    private LocalDateTime toLocalDateTime(java.util.Date date) {
+        if (date == null) return null;
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
     }
 
     public record RssEntry(String title, String link, String description, String guid, LocalDateTime publishedAt) {}
