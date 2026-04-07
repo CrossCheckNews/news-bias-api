@@ -32,9 +32,6 @@ public class Publisher {
     @Column(nullable = false)
     private PoliticalLeaning politicalLeaning;
 
-    @Column(nullable = false)
-    private String rssUrl;
-
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -43,10 +40,9 @@ public class Publisher {
         this.createdAt = LocalDateTime.now();
     }
 
-    public void update(String name, Country country, PoliticalLeaning politicalLeaning, String rssUrl) {
+    public void update(String name, Country country, PoliticalLeaning politicalLeaning) {
         this.name = name;
         this.country = country;
         this.politicalLeaning = politicalLeaning;
-        this.rssUrl = rssUrl;
     }
 }

@@ -26,7 +26,6 @@ public class PublisherService {
                 .name(request.getName())
                 .country(request.getCountry())
                 .politicalLeaning(request.getPoliticalLeaning())
-                .rssUrl(request.getRssUrl())
                 .build();
         return PublisherResponse.from(publisherRepository.save(publisher));
     }
@@ -47,8 +46,7 @@ public class PublisherService {
         publisher.update(
                 request.getName(),
                 request.getCountry(),
-                request.getPoliticalLeaning(),
-                request.getRssUrl()
+                request.getPoliticalLeaning()
         );
         return PublisherResponse.from(publisher);
     }

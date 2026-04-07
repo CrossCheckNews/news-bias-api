@@ -1,6 +1,6 @@
 package com.crosschecknews.api.exception;
 
-// Design Ref: §8 — Unified error handling for 404/409/502/400
+import com.crosschecknews.api.client.GeminiException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,33 +16,37 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ErrorResponse.builder()
-                        .status(404)
-                        .message(ex.getMessage())
-                        .timestamp(LocalDateTime.now())
-                        .build());
+        return error(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    @ExceptionHandler(RssFetchException.class)
-    public ResponseEntity<ErrorResponse> handleRssFetch(RssFetchException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                .body(ErrorResponse.builder()
-                        .status(502)
-                        .message(ex.getMessage())
-                        .timestamp(LocalDateTime.now())
-                        .build());
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorized(InvalidCredentialsException ex) {
+        return error(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
-    // Plan SC: FR-07 — 중복 URL 시 409 반환
+    /** 중복 URL/dedupeKey 등 unique constraint 위반 시 409 반환 */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDuplicate(DataIntegrityViolationException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ErrorResponse.builder()
-                        .status(409)
-                        .message("Duplicate resource: " + ex.getMostSpecificCause().getMessage())
-                        .timestamp(LocalDateTime.now())
-                        .build());
+        return error(HttpStatus.CONFLICT,
+                "Duplicate resource: " + ex.getMostSpecificCause().getMessage());
+    }
+
+    /** RSS 파싱 실패 */
+    @ExceptionHandler(RssFetchException.class)
+    public ResponseEntity<ErrorResponse> handleRssFetch(RssFetchException ex) {
+        return error(HttpStatus.BAD_GATEWAY, ex.getMessage());
+    }
+
+    /** Gemini AI 호출 실패 */
+    @ExceptionHandler(GeminiException.class)
+    public ResponseEntity<ErrorResponse> handleGemini(GeminiException ex) {
+        return error(HttpStatus.BAD_GATEWAY, "AI service error: " + ex.getMessage());
+    }
+
+    /** 요약 대상 기사 없음 등 비즈니스 조건 미충족 */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException ex) {
+        return error(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -50,9 +54,15 @@ public class GlobalExceptionHandler {
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .collect(Collectors.joining(", "));
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        return error(HttpStatus.BAD_REQUEST, message);
+    }
+
+    // ── 공통 ─────────────────────────────────────────────────────────────────
+
+    private ResponseEntity<ErrorResponse> error(HttpStatus status, String message) {
+        return ResponseEntity.status(status)
                 .body(ErrorResponse.builder()
-                        .status(400)
+                        .status(status.value())
                         .message(message)
                         .timestamp(LocalDateTime.now())
                         .build());

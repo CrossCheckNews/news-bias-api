@@ -1,19 +1,19 @@
 package com.crosschecknews.api.service;
 
-// Design Ref: §6.3 — Rome SyndFeedInput for RSS/Atom parsing
 import com.crosschecknews.api.exception.RssFetchException;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Collections;
 import java.util.List;
 
+@Slf4j
 @Service
 public class RssFetchService {
 
@@ -38,8 +38,17 @@ public class RssFetchService {
                     .atZone(ZoneId.systemDefault())
                     .toLocalDateTime();
         }
-        return new RssEntry(entry.getTitle(), entry.getLink(), publishedAt);
+
+        String description = null;
+        if (entry.getDescription() != null) {
+            description = entry.getDescription().getValue();
+        }
+
+        // guid: RSS <guid> 또는 Atom <id> — 없으면 link로 fallback
+        String guid = entry.getUri() != null ? entry.getUri() : entry.getLink();
+
+        return new RssEntry(entry.getTitle(), entry.getLink(), description, guid, publishedAt);
     }
 
-    public record RssEntry(String title, String link, LocalDateTime publishedAt) {}
+    public record RssEntry(String title, String link, String description, String guid, LocalDateTime publishedAt) {}
 }

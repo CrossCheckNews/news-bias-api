@@ -15,7 +15,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +35,7 @@ public class TopicService {
         Topic topic = Topic.builder()
                 .title(request.getTitle())
                 .summary(request.getSummary())
+                .category(request.getCategory())
                 .status(request.getStatus())
                 .startDate(request.getStartDate())
                 .build();
@@ -39,10 +43,19 @@ public class TopicService {
         return TopicResponse.from(saved, 0);
     }
 
-    public Page<TopicResponse> findAll(TopicStatus status, Pageable pageable) {
-        Page<Topic> topics = (status != null)
-                ? topicRepository.findByStatus(status, pageable)
-                : topicRepository.findAll(pageable);
+    public Page<TopicResponse> findAll(TopicStatus status, LocalDate date, Pageable pageable) {
+        Page<Topic> topics;
+        if (date != null) {
+            LocalDateTime from = date.atStartOfDay();
+            LocalDateTime to = date.plusDays(1).atStartOfDay();
+            topics = (status != null)
+                    ? topicRepository.findByStatusAndCreatedAtBetween(status, from, to, pageable)
+                    : topicRepository.findByCreatedAtBetween(from, to, pageable);
+        } else {
+            topics = (status != null)
+                    ? topicRepository.findByStatus(status, pageable)
+                    : topicRepository.findAll(pageable);
+        }
         return topics.map(topic ->
                 TopicResponse.from(topic, topicArticleRepository.countByTopicId(topic.getId()))
         );
@@ -104,44 +117,11 @@ public class TopicService {
         topicArticleRepository.deleteByTopicIdAndArticleId(topicId, articleId);
     }
 
-    // 비교 뷰: groupBy=leaning(default) or country
+    // 비교 뷰: groupBy=leaning(default) or country (null = flat)
     public TopicComparisonResponse getComparisonView(Long topicId, String groupBy) {
-        getTopic(topicId);
+        Topic topic = getTopic(topicId);
         List<TopicArticle> links = topicArticleRepository.findByTopicIdWithDetails(topicId);
-
-        Map<String, List<ArticleResponse>> grouped;
-
-        if ("country".equalsIgnoreCase(groupBy)) {
-            grouped = links.stream()
-                    .collect(Collectors.groupingBy(
-                            ta -> ta.getArticle().getPublisher().getCountry().name(),
-                            LinkedHashMap::new,
-                            Collectors.mapping(ta -> ArticleResponse.from(ta.getArticle()), Collectors.toList())
-                    ));
-        } else {
-            // leaning 기준: LEFT → CENTER → RIGHT 순서 보장
-            grouped = links.stream()
-                    .sorted(Comparator.comparingInt(
-                            ta -> ta.getArticle().getPublisher().getPoliticalLeaning().ordinal()))
-                    .collect(Collectors.groupingBy(
-                            ta -> ta.getArticle().getPublisher().getPoliticalLeaning().name(),
-                            LinkedHashMap::new,
-                            Collectors.mapping(ta -> ArticleResponse.from(ta.getArticle()), Collectors.toList())
-                    ));
-        }
-
-        List<TopicComparisonResponse.Group> groups = grouped.entrySet().stream()
-                .map(e -> TopicComparisonResponse.Group.builder()
-                        .key(e.getKey())
-                        .articles(e.getValue())
-                        .build())
-                .toList();
-
-        return TopicComparisonResponse.builder()
-                .topicId(topicId)
-                .groupBy(groupBy == null ? "leaning" : groupBy.toLowerCase())
-                .groups(groups)
-                .build();
+        return TopicComparisonResponse.of(topic, links, groupBy);
     }
 
     Topic getTopic(Long topicId) {

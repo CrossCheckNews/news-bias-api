@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./gradlew build:*)"
+      "Bash(./gradlew build:*)",
+      "mcp__plugin_bkit_bkit-pdca__bkit_pdca_status",
+      "Bash(./gradlew test:*)",
+      "Skill(bkit:pdca)",
+      "Bash(./gradlew compileJava)"
     ]
   }
 }

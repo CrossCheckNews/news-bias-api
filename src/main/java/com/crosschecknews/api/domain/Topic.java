@@ -27,6 +27,18 @@ public class Topic {
     @Column(columnDefinition = "TEXT")
     private String summary;
 
+    // AI-generated fields
+    @Column(columnDefinition = "TEXT")
+    private String aiSummary;
+
+    private LocalDateTime summaryGeneratedAt;
+
+    private String aiModel;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Category category;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TopicStatus status;
@@ -46,5 +58,11 @@ public class Topic {
         this.summary = summary;
         this.status = status;
         this.startDate = startDate;
+    }
+
+    public void applySummary(String aiSummary, String aiModel) {
+        this.aiSummary = aiSummary;
+        this.aiModel = aiModel;
+        this.summaryGeneratedAt = LocalDateTime.now();
     }
 }

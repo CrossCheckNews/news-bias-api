@@ -15,6 +15,7 @@ public class TopicDetailResponse {
     private Long id;
     private String title;
     private String summary;
+    private String aiSummary;
     private TopicStatus status;
     private LocalDate startDate;
     private long articleCount;
@@ -31,6 +32,7 @@ public class TopicDetailResponse {
                 .id(topic.getId())
                 .title(topic.getTitle())
                 .summary(topic.getSummary())
+                .aiSummary(topic.getAiSummary())
                 .status(topic.getStatus())
                 .startDate(topic.getStartDate())
                 .articleCount(articleCount)
