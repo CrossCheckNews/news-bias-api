@@ -61,8 +61,16 @@ public class Article {
     @Column(nullable = false, updatable = false)
     private LocalDateTime fetchedAt;
 
+    // headline embedding 벡터 (JSON 직렬화). 최초 임베딩 후 영구 저장 → API 재호출 방지
+    @Column(columnDefinition = "TEXT")
+    private String embeddingJson;
+
     @PrePersist
     protected void onFetch() {
         this.fetchedAt = LocalDateTime.now();
+    }
+
+    public void updateEmbedding(String json) {
+        this.embeddingJson = json;
     }
 }

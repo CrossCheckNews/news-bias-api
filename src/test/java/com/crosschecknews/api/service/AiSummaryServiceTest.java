@@ -1,6 +1,6 @@
 package com.crosschecknews.api.service;
 
-import com.crosschecknews.api.client.GeminiClient;
+import com.crosschecknews.api.client.FallbackAiClient;
 import com.crosschecknews.api.domain.*;
 import com.crosschecknews.api.dto.SummarizeResponse;
 import com.crosschecknews.api.exception.ResourceNotFoundException;
@@ -37,7 +37,7 @@ class AiSummaryServiceTest {
 
     @Mock TopicRepository        topicRepository;
     @Mock TopicArticleRepository topicArticleRepository;
-    @Mock GeminiClient           geminiClient;
+    @Mock FallbackAiClient       geminiClient;
     @Mock PromptBuilder          promptBuilder;
 
     @InjectMocks AiSummaryService aiSummaryService;

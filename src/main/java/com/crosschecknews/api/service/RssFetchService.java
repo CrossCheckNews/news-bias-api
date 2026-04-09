@@ -6,8 +6,11 @@ import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import java.io.InputStream;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -17,7 +20,43 @@ import java.util.List;
 @Service
 public class RssFetchService {
 
+    @Value("${rss.use-fixture:false}")
+    private boolean useFixture;
+
+    @Value("${rss.fixture-path:rss-fixtures}")
+    private String fixturePath;
+
+    /**
+     * feedSourceCode가 있으면 fixture 파일에서, 없으면 rssUrl 네트워크에서 읽는다.
+     */
     public List<RssEntry> fetch(String rssUrl) {
+        return fetchFromUrl(rssUrl);
+    }
+
+    public List<RssEntry> fetchWithCode(String feedSourceCode, String rssUrl) {
+        if (useFixture) {
+            return fetchFromFixture(feedSourceCode);
+        }
+        return fetchFromUrl(rssUrl);
+    }
+
+    private List<RssEntry> fetchFromFixture(String feedSourceCode) {
+        String path = fixturePath + "/" + feedSourceCode + ".xml";
+        log.info("RSS fixture 파일에서 읽기: {}", path);
+        try (InputStream is = new ClassPathResource(path).getInputStream()) {
+            SyndFeedInput input = new SyndFeedInput();
+            SyndFeed feed = input.build(new XmlReader(is));
+            LocalDateTime feedLevelDate = toLocalDateTime(feed.getPublishedDate());
+            return feed.getEntries().stream()
+                    .map(entry -> toRssEntry(entry, feedLevelDate))
+                    .filter(e -> e.link() != null && !e.link().isBlank())
+                    .toList();
+        } catch (Exception e) {
+            throw new RssFetchException(path, e);
+        }
+    }
+
+    private List<RssEntry> fetchFromUrl(String rssUrl) {
         try {
             SyndFeedInput input = new SyndFeedInput();
             SyndFeed feed = input.build(new XmlReader(new URL(rssUrl)));
@@ -41,7 +80,7 @@ public class RssFetchService {
                 : entry.getUpdatedDate();
         LocalDateTime publishedAt = rawDate != null
                 ? toLocalDateTime(rawDate)
-                : feedLevelDate;
+                 : feedLevelDate;
 
         // 1순위: <description> (비어 있으면 무시)
         // 2순위: <content:encoded> — 조선일보처럼 description이 비어있고 content:encoded에 본문이 있는 경우

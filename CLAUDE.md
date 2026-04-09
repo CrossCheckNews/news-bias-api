@@ -1,27 +1,42 @@
-# CLAUDE.md
+# Project: Cross Check news
+This project is a portfolio-focused backend API for comparing how different media outlets report the same issue.
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+The goal is NOT to build a full news platform,
+but to demonstrate clean backend architecture and data flow.
 
+## Critical Rules (절대 규칙)
+- Do NOT store or process full article content (headline + link only)
+- Do NOT over-engineer (no microservices, no complex infra)
+- Always prefer simple and explainable solutions
+- This is a portfolio project → clarity > scalability
+- Never guess about code that has not been read
+- Always verify changes before completing a task
 
-## Project Overview
-`news-bias-api` is a Spring Boot 3.x REST API for cross-checking news bias. It uses Java 21, Spring Data JPA, and H2 (in-memory database for development).
-This project is a "news perspective comparison service".
+## Architecture (아키텍쳐)
+This project follows a simple layered architecture:
+- Controller → Service → Repository
 
-The goal is NOT to summarize news,
-but to compare how different media outlets (by country and political leaning)
-report the same issue.
+- **Controller**
+    - Handles HTTP request/response
+    - Validates input (`@Valid`)
+    - Returns DTOs only
 
-## Key Features
-- Collect news headlines from multiple publishers
-- Cluster articles into topics (same issue)
-- Generate 1–2 line AI summaries per topic
-- Display headlines grouped by publisher for comparison
+- **Service**
+    - Contains business logic
+    - Handles clustering and topic logic
+    - Coordinates between repositories
 
-## Constraints
-- Do NOT store or redistribute article bodies
-- Use only headlines and links
-- Avoid over-engineering
-- Focus on backend architecture and API design (portfolio purpose)
+- **Repository**
+    - Spring Data JPA interface
+    - Handles DB access only
+
+- **Domain**
+    - JPA Entities
+    - Minimal relationships (avoid complex mapping)
+
+- **DTO**
+    - Request/Response models
+    - Do not expose entities directly
 
 ## Tech Stack
 
@@ -32,8 +47,7 @@ report the same issue.
 - **Spring Validation** — request validation (`@Valid`, `@NotBlank`, etc.)
 - **Gradle** — build tool
 
-## Common Commands
-
+## Build & Test Commands (빌드/테스트)
 ```bash
 # Build
 ./gradlew build
@@ -51,72 +65,23 @@ report the same issue.
 ./gradlew clean build
 ```
 
-## Package Structure
+## Domain Context (도메인 컨텍스트)
 
-Base package: `com.crosschecknews.api`
+See detailed domain model in:
+src/main/java/com/crosschecknews/api/domain/domain.md
 
-Recommended layered structure (not yet created):
-```
-controller/   — REST controllers (@RestController)
-service/      — Business logic (@Service)
-repository/   — Spring Data JPA repositories (@Repository)
-domain/       — JPA entities and domain models (@Entity)
-dto/          — Request/response DTOs
-```
+### Summary (IMPORTANT)
 
-## Configuration
-`src/main/resources/application.properties` — currently minimal. H2 console and datasource config should be added here as development progresses.
+- Publisher: 언론사 (country + politicalLeaning)
+- Article: headline + url only
+- Topic: 같은 이슈 묶음
+- TopicArticle: Topic-Article 연결
 
-## Working Style
-Default to action.
-Do not stop at suggestions only.
-When implementation is requested, implement it.
+Topic clustering is approximate.
+Do NOT store full article content.
 
-However, do not blindly code.
-Before making changes:
-1. inspect the current codebase structure
-2. understand related files and dependencies
-3. make a short plan
-4. implement
-5. verify
-6. report what changed and what was verified
-
-Do not ask clarifying questions unless absolutely necessary.
-Make reasonable assumptions and proceed.
-
-If a requirement is ambiguous, choose the simplest reasonable implementation that fits the project purpose.
-
-
-## Verification Rules
-Verification is required.
-
-For every meaningful change:
-- run or write relevant tests where appropriate
-- verify compilation/build success when possible
-- check for broken imports / missing dependencies
-- validate API/request-response consistency
-- ensure new code follows existing project conventions
-- explicitly report what was verified and what was not verified
-
-If tests do not exist, add the smallest useful test or validation you can.
-If full automated verification is not possible, do lightweight but concrete verification instead.
-Never claim something is verified unless it was actually checked.
-</Verification Rules>
-
-## Investigate Before Answering
-Never guess about code you have not opened.
-If the user references a specific file, read that file before answering.
-Before answering any question about the codebase, investigate and read the relevant files.
-Do not make claims about code before investigation unless the answer is certain and does not depend on unseen code.
-Prioritize grounded, hallucination-free answers based on the actual codebase.
-</Investigate Before Answering>
-
-## Architecture Rules
-- Prefer Controller -> Service -> Repository structure
-- Keep DTO usage practical, not excessive
-- Keep entity relationships simple
-- Avoid unnecessary design patterns
-- Avoid creating too many layers for a small feature
-- Use naming that is easy to explain in a portfolio
-- For clustering, prefer a simple and explainable approach first
-- Do not introduce advanced NLP or vector infrastructure unless explicitly requested
+## Key Patterns (핵심 패턴)
+- Collect news headlines from multiple publishers
+- Cluster articles into topics (same issue)
+- Generate 1–2 line AI summaries per topic
+- Display headlines grouped by publisher for comparison

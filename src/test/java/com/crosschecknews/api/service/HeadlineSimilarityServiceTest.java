@@ -1,88 +1,141 @@
 package com.crosschecknews.api.service;
 
+import com.crosschecknews.api.repository.ArticleRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
-/**
- * Stage 1~3 핵심 로직: Jaccard 유사도 기반 헤드라인 유사도 테스트.
- * 외부 의존성 없이 순수 로직만 검증.
- */
+@ExtendWith(MockitoExtension.class)
 class HeadlineSimilarityServiceTest {
 
-    private final HeadlineSimilarityService service = new HeadlineSimilarityService();
+    @Mock HeadlineEmbeddingService embeddingService;
+    @Mock ArticleRepository        articleRepository;
+
+    HeadlineSimilarityService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new HeadlineSimilarityService(
+                embeddingService, new HeadlinePreprocessor(),
+                articleRepository, new ObjectMapper(), 2);
+    }
+
+    // ── cosine similarity 기반 동작 ───────────────────────────────────────────
 
     @Test
-    void 동일한_헤드라인은_유사도_1() {
-        double sim = service.similarity(
-                "trump wins us election",
-                "trump wins us election"
-        );
-        assertThat(sim).isEqualTo(1.0);
+    void 동일한_embedding이면_유사도_1() {
+        double[] vec = {1.0, 0.0, 0.0};
+        given(embeddingService.embed(anyString())).willReturn(vec);
+
+        double sim = service.similarity("trump wins election", "trump wins election");
+
+        assertThat(sim).isCloseTo(1.0, within(1e-9));
     }
 
     @Test
-    void 완전히_다른_헤드라인은_유사도_0() {
-        double sim = service.similarity(
-                "trump wins election",
-                "japan earthquake tsunami"
-        );
+    void 직교_embedding이면_유사도_0() {
+        given(embeddingService.embed("trump wins election")).willReturn(new double[]{1.0, 0.0});
+        given(embeddingService.embed("japan earthquake tsunami")).willReturn(new double[]{0.0, 1.0});
+
+        double sim = service.similarity("trump wins election", "japan earthquake tsunami");
+
+        assertThat(sim).isCloseTo(0.0, within(1e-9));
+    }
+
+    @Test
+    void 유사한_embedding이면_유사도가_높다() {
+        given(embeddingService.embed("trump tariff trade war")).willReturn(new double[]{0.9, 0.1, 0.0});
+        given(embeddingService.embed("trump trade war tariffs")).willReturn(new double[]{0.85, 0.15, 0.0});
+
+        double sim = service.similarity("trump tariff trade war", "trump trade war tariffs");
+
+        assertThat(sim).isGreaterThan(0.9);
+    }
+
+    // ── embedding 실패 방어 처리 ─────────────────────────────────────────────
+
+    @Test
+    void embedding_실패시_유사도_0_반환하고_배치_계속_진행() {
+        given(embeddingService.embed(anyString())).willThrow(new RuntimeException("API 호출 실패"));
+
+        double sim = service.similarity("trump wins election", "japan earthquake");
+
         assertThat(sim).isEqualTo(0.0);
     }
 
     @Test
-    void 단어_일부_겹치면_유사도가_0과_1_사이() {
-        // "trump" "election" 공유
-        double sim = service.similarity(
-                "trump wins us election",
-                "trump loses presidential election"
-        );
-        assertThat(sim).isGreaterThan(0.0).isLessThan(1.0);
-    }
+    void 한쪽_embedding_실패시_유사도_0() {
+        given(embeddingService.embed("good headline")).willReturn(new double[]{1.0, 0.0});
+        given(embeddingService.embed("bad headline")).willThrow(new RuntimeException("실패"));
 
-    @Test
-    void 클러스터링_임계값_0_25_이상이면_동일_이슈로_판단_가능() {
-        // 동일 이슈를 다루는 두 헤드라인
-        double sim = service.similarity(
-                "north korea missile launch threatens region",
-                "north korea fires missile amid tensions"
-        );
-        // "north", "korea", "missile" 공유 → Jaccard 0.25 이상 기대
-        assertThat(sim).isGreaterThanOrEqualTo(0.25);
-    }
+        double sim = service.similarity("good headline", "bad headline");
 
-    @Test
-    void 불용어만_있는_헤드라인은_유사도_계산에서_토큰이_제거된다() {
-        // "is", "the", "a" 등 불용어만 있으면 토큰 없음 → 0.0
-        double sim = service.similarity(
-                "is the a an",
-                "trump wins election"
-        );
         assertThat(sim).isEqualTo(0.0);
     }
 
+    // ── null / 빈 입력 ───────────────────────────────────────────────────────
+
     @Test
-    void 둘_다_빈_문자열이면_유사도_1() {
-        assertThat(service.similarity("", "")).isEqualTo(1.0);
+    void null_입력은_유사도_0() {
+        double sim = service.similarity(null, "trump wins");
+        assertThat(sim).isEqualTo(0.0);
+        verifyNoInteractions(embeddingService);
     }
 
     @Test
-    void 한쪽만_빈_문자열이면_유사도_0() {
-        assertThat(service.similarity("", "trump wins")).isEqualTo(0.0);
-        assertThat(service.similarity("trump wins", "")).isEqualTo(0.0);
+    void 빈_문자열은_유사도_0() {
+        double sim = service.similarity("", "trump wins");
+        assertThat(sim).isEqualTo(0.0);
+        verifyNoInteractions(embeddingService);
     }
 
-    @Test
-    void null_입력은_빈_문자열과_동일하게_처리된다() {
-        assertThat(service.similarity(null, null)).isEqualTo(1.0);
-        assertThat(service.similarity(null, "trump wins")).isEqualTo(0.0);
-    }
+    // ── 캐싱 동작 ────────────────────────────────────────────────────────────
 
-    @Test
-    void 두_글자_미만_토큰은_무시된다() {
-        // "i" 는 길이 1 → 무시
-        double sim = service.similarity("i go", "i go");
-        // "go" 는 길이 2로 유효 → 유사도 1.0
-        assertThat(sim).isEqualTo(1.0);
+    @Nested
+    class EmbeddingCache {
+
+        @Test
+        void 동일_headline은_embedding_API를_한_번만_호출한다() {
+            given(embeddingService.embed(anyString())).willReturn(new double[]{1.0, 0.0});
+
+            service.similarity("trump wins election", "trump wins election different");
+            service.similarity("trump wins election", "another headline");
+
+            // "trump wins election"은 캐시 히트 → 총 embedding 호출은 3번 (3개의 고유 headline)
+            verify(embeddingService, times(3)).embed(anyString());
+        }
+
+        @Test
+        void 서로_다른_headline은_각각_embedding을_호출한다() {
+            given(embeddingService.embed("headline a")).willReturn(new double[]{1.0, 0.0});
+            given(embeddingService.embed("headline b")).willReturn(new double[]{0.0, 1.0});
+
+            service.similarity("headline a", "headline b");
+
+            verify(embeddingService).embed("headline a");
+            verify(embeddingService).embed("headline b");
+        }
+
+        @Test
+        void 동일_headline_반복_호출시_캐시에서_반환한다() {
+            given(embeddingService.embed("cached headline")).willReturn(new double[]{1.0, 0.0});
+
+            service.similarity("cached headline", "other");
+            service.similarity("cached headline", "other");
+            service.similarity("cached headline", "other");
+
+            // "cached headline"은 첫 번째 호출에만 embed → 이후 캐시 사용
+            verify(embeddingService, times(1)).embed("cached headline");
+        }
     }
 }

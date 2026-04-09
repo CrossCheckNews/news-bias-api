@@ -40,7 +40,7 @@ public class TopicService {
                 .startDate(request.getStartDate())
                 .build();
         Topic saved = topicRepository.save(topic);
-        return TopicResponse.from(saved, 0);
+        return TopicResponse.empty(saved);
     }
 
     public Page<TopicResponse> findAll(TopicStatus status, LocalDate date, Pageable pageable) {
@@ -56,36 +56,31 @@ public class TopicService {
                     ? topicRepository.findByStatus(status, pageable)
                     : topicRepository.findAll(pageable);
         }
+
+        // 페이지 내 전체 topicId를 한 번에 조회해 N+1 방지
+        List<Long> topicIds = topics.stream().map(Topic::getId).toList();
+        Map<Long, List<TopicArticle>> linksByTopic = topicArticleRepository
+                .findByTopicIdInWithDetails(topicIds)
+                .stream()
+                .collect(Collectors.groupingBy(ta -> ta.getTopic().getId()));
+
         return topics.map(topic ->
-                TopicResponse.from(topic, topicArticleRepository.countByTopicId(topic.getId()))
+                TopicResponse.from(topic, linksByTopic.getOrDefault(topic.getId(), List.of()))
         );
     }
 
     public TopicDetailResponse findById(Long topicId) {
         Topic topic = getTopic(topicId);
         List<TopicArticle> links = topicArticleRepository.findByTopicIdWithDetails(topicId);
-
-        Map<String, Long> leaningDistribution = links.stream()
-                .collect(Collectors.groupingBy(
-                        ta -> ta.getArticle().getPublisher().getPoliticalLeaning().name(),
-                        Collectors.counting()
-                ));
-
-        Map<String, Long> countryDistribution = links.stream()
-                .collect(Collectors.groupingBy(
-                        ta -> ta.getArticle().getPublisher().getCountry().name(),
-                        Collectors.counting()
-                ));
-
-        return TopicDetailResponse.from(topic, links.size(), leaningDistribution, countryDistribution);
+        return TopicDetailResponse.from(topic, links);
     }
 
     @Transactional
     public TopicResponse update(Long topicId, TopicRequest request) {
         Topic topic = getTopic(topicId);
         topic.update(request.getTitle(), request.getSummary(), request.getStatus(), request.getStartDate());
-        long articleCount = topicArticleRepository.countByTopicId(topicId);
-        return TopicResponse.from(topic, articleCount);
+        List<TopicArticle> links = topicArticleRepository.findByTopicIdWithDetails(topicId);
+        return TopicResponse.from(topic, links);
     }
 
     @Transactional

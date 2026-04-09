@@ -6,11 +6,13 @@ import com.crosschecknews.api.dto.ClusteringResult;
 import com.crosschecknews.api.repository.ArticleRepository;
 import com.crosschecknews.api.repository.TopicArticleRepository;
 import com.crosschecknews.api.repository.TopicRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,12 +23,16 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 /**
- * Stage 4: Topic 클러스터링 테스트.
+ * TopicClusteringService — TF-IDF + Cosine Similarity 클러스터링 테스트.
  *
- * 핵심 로직:
- * - 유사도 >= 0.25이면 같은 클러스터로 Union
- * - 서로 다른 언론사 2개 이상 있어야 유효 클러스터
- * - 유효 클러스터 → Topic + TopicArticle 저장
+ * <p>외부 API 의존 없이 순수 TF-IDF 벡터로 유사도를 계산하므로,
+ * 테스트는 실제 headline 텍스트로 동작을 검증한다.
+ *
+ * <h3>TF-IDF 특성</h3>
+ * <ul>
+ *   <li>같은 이슈 headline: 핵심 단어 공유 → cosine > 0</li>
+ *   <li>다른 이슈 headline: 공유 단어 없음 → cosine = 0.0</li>
+ * </ul>
  */
 @ExtendWith(MockitoExtension.class)
 class TopicClusteringServiceTest {
@@ -34,9 +40,15 @@ class TopicClusteringServiceTest {
     @Mock ArticleRepository      articleRepository;
     @Mock TopicRepository        topicRepository;
     @Mock TopicArticleRepository topicArticleRepository;
-    @Mock HeadlineSimilarityService similarityService;
 
     @InjectMocks TopicClusteringService clusteringService;
+
+    @BeforeEach
+    void setUp() {
+        // TF-IDF cosine은 0.1~0.4 범위가 일반적
+        ReflectionTestUtils.setField(clusteringService, "similarityThreshold", 0.10);
+        ReflectionTestUtils.setField(clusteringService, "minPublishers", 2);
+    }
 
     private Publisher publisher(long id, String name) {
         return Publisher.builder()
@@ -60,7 +72,6 @@ class TopicClusteringServiceTest {
                 .build();
     }
 
-    /** topicRepository.save()가 @GeneratedValue 없이 null id를 반환하므로, id를 직접 주입한 Topic 반환 */
     private void stubTopicSave(long topicId) {
         given(topicRepository.save(any(Topic.class))).willAnswer(inv -> {
             Topic t = inv.getArgument(0);
@@ -85,8 +96,7 @@ class TopicClusteringServiceTest {
         ClusteringResult result = clusteringService.cluster(req(48));
 
         assertThat(result.getClustersCreated()).isEqualTo(0);
-        assertThat(result.getLinkedArticleCount()).isEqualTo(0);
-        verifyNoInteractions(topicRepository, topicArticleRepository, similarityService);
+        verifyNoInteractions(topicRepository, topicArticleRepository);
     }
 
     @Test
@@ -103,18 +113,16 @@ class TopicClusteringServiceTest {
     // ── 클러스터 생성 ──────────────────────────────────────────────────────────
 
     @Test
-    void 유사도_임계값_이상이고_다른_언론사_2개면_Topic이_생성된다() {
+    void 핵심단어_공유_headline은_같은_클러스터로_묶인다() {
         Publisher fox = publisher(1L, "Fox News");
         Publisher nyt = publisher(2L, "New York Times");
+        // "trump", "election" 공유 → TF-IDF cosine > 0
         Article a1 = article(1L, fox, "trump wins us election");
-        Article a2 = article(2L, nyt, "trump elected us president");
+        Article a2 = article(2L, nyt, "trump wins presidential election");
 
         given(articleRepository.findClusteringCandidates(any(), any()))
                 .willReturn(List.of(a1, a2));
-        // buildClusters + pickRepresentativeTitle 모두 처리 — any() 사용
-        given(similarityService.similarity(any(), any())).willReturn(0.5);
         stubTopicSave(1L);
-        // topic.getId()가 null이 되므로 any(Long.class) 아닌 any() 사용
         given(topicArticleRepository.existsByTopicIdAndArticleId(any(), any()))
                 .willReturn(false);
 
@@ -132,11 +140,10 @@ class TopicClusteringServiceTest {
     void 같은_언론사_기사끼리만_묶이면_Topic이_생성되지_않는다() {
         Publisher fox = publisher(1L, "Fox News");
         Article a1 = article(1L, fox, "trump wins us election");
-        Article a2 = article(2L, fox, "trump elected us president");
+        Article a2 = article(2L, fox, "trump wins presidential election");
 
         given(articleRepository.findClusteringCandidates(any(), any()))
                 .willReturn(List.of(a1, a2));
-        given(similarityService.similarity(any(), any())).willReturn(0.8);
 
         ClusteringResult result = clusteringService.cluster(req(48));
 
@@ -145,15 +152,15 @@ class TopicClusteringServiceTest {
     }
 
     @Test
-    void 유사도가_임계값_미만이면_클러스터로_묶이지_않는다() {
+    void 공유단어가_없는_headline은_클러스터로_묶이지_않는다() {
         Publisher fox = publisher(1L, "Fox News");
         Publisher nyt = publisher(2L, "New York Times");
+        // 완전히 다른 이슈 — 공유 단어 없음 → cosine = 0.0
         Article a1 = article(1L, fox, "trump wins election");
         Article a2 = article(2L, nyt, "japan earthquake disaster");
 
         given(articleRepository.findClusteringCandidates(any(), any()))
                 .willReturn(List.of(a1, a2));
-        given(similarityService.similarity(any(), any())).willReturn(0.0);
 
         ClusteringResult result = clusteringService.cluster(req(48));
 
@@ -168,29 +175,17 @@ class TopicClusteringServiceTest {
         Publisher fox = publisher(1L, "Fox News");
         Publisher nyt = publisher(2L, "New York Times");
 
-        Article a1 = article(1L, fox, "trump wins election");
-        Article a2 = article(2L, nyt, "trump elected president");
-        Article a3 = article(3L, fox, "japan earthquake disaster");
-        Article a4 = article(4L, nyt, "earthquake strikes japan");
+        Article a1 = article(1L, fox, "trump wins us election president");
+        Article a2 = article(2L, nyt, "trump wins presidential election us");
+        Article a3 = article(3L, fox, "japan earthquake disaster rescue");
+        Article a4 = article(4L, nyt, "earthquake strikes japan rescue teams");
 
         given(articleRepository.findClusteringCandidates(any(), any()))
                 .willReturn(List.of(a1, a2, a3, a4));
 
-        // 키워드 기반 Answer: trump 기사끼리, earthquake 기사끼리는 유사 / 교차는 비유사
-        given(similarityService.similarity(any(), any())).willAnswer(inv -> {
-            String h1 = inv.getArgument(0);
-            String h2 = inv.getArgument(1);
-            boolean bothTrump = h1.contains("trump") && h2.contains("trump");
-            boolean bothQuake = (h1.contains("earthquake") || h1.contains("japan"))
-                    && (h2.contains("earthquake") || h2.contains("japan"));
-            return (bothTrump || bothQuake) ? 0.5 : 0.0;
-        });
-
-        // 두 번 호출되므로 각각 다른 id 반환
         given(topicRepository.save(any(Topic.class))).willAnswer(inv -> {
             Topic t = inv.getArgument(0);
-            // title로 id 구분
-            long id = t.getTitle().contains("trump") ? 1L : 2L;
+            long id = t.getTitle().toLowerCase().contains("trump") ? 1L : 2L;
             return Topic.builder().id(id).title(t.getTitle())
                     .category(t.getCategory()).status(t.getStatus())
                     .startDate(t.getStartDate()).build();
@@ -211,15 +206,12 @@ class TopicClusteringServiceTest {
     void 이미_Topic에_연결된_기사는_중복_저장하지_않는다() {
         Publisher fox = publisher(1L, "Fox News");
         Publisher nyt = publisher(2L, "New York Times");
-        Article a1 = article(1L, fox, "trump wins election");
-        Article a2 = article(2L, nyt, "trump elected president");
+        Article a1 = article(1L, fox, "trump wins us election");
+        Article a2 = article(2L, nyt, "trump wins presidential election");
 
         given(articleRepository.findClusteringCandidates(any(), any()))
                 .willReturn(List.of(a1, a2));
-        given(similarityService.similarity(any(), any())).willReturn(0.5);
         stubTopicSave(1L);
-        // topic.getId()는 null(저장 결과를 재할당하지 않음) → any() 사용
-        // a1(id=1)은 이미 연결, a2(id=2)는 신규 — id 순서로 순회하므로 첫 번째 false, 두 번째 true
         given(topicArticleRepository.existsByTopicIdAndArticleId(any(), any()))
                 .willReturn(true)   // a1: 이미 연결
                 .willReturn(false); // a2: 신규

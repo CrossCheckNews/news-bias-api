@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  테스트용 기사 데이터 (DB 없이 요약 파이프라인 검증)
+  토픽: 미중 무역전쟁 — 트럼프 관세 부과
+  구성: 영어 보수, 영어 진보, 한국어 보수, 한국어 진보
+-->
+<test-articles topic="US-China Trade War: Trump Tariffs">
+
+    <article>
+        <publisher name="Fox News" country="US" politicalLeaning="CONSERVATIVE"/>
+        <headline>Trump's Tariff Strategy Forces China to the Negotiating Table</headline>
+        <description>
+            The administration's firm stance on trade deficits has compelled Beijing to seek
+            diplomatic talks as sweeping tariffs take effect on key Chinese exports.
+            White House officials say the move restores leverage lost under previous administrations
+            and signals a new era of fair trade enforcement.
+        </description>
+        <url>https://test.example.com/fox/trade-tariff-1</url>
+    </article>
+
+    <article>
+        <publisher name="The Guardian" country="GB" politicalLeaning="PROGRESSIVE"/>
+        <headline>US Tariffs on China Push World Economy to the Brink as Markets Tumble</headline>
+        <description>
+            Economists warn that escalating trade barriers between the world's two largest economies
+            risk triggering a global downturn. Developing nations face the harshest consequences
+            as supply chains fracture and consumer prices surge across Western markets.
+        </description>
+        <url>https://test.example.com/guardian/trade-tariff-1</url>
+    </article>
+
+    <article>
+        <publisher name="조선일보" country="KR" politicalLeaning="CONSERVATIVE"/>
+        <headline>트럼프 관세 강경책, 중국 협상 테이블로 이끌어… 무역 불균형 해소 신호</headline>
+        <description>
+            미국이 중국산 제품에 고율 관세를 부과하자 중국이 협상 의지를 표명했다.
+            전문가들은 이번 조치가 미국의 대중 무역 적자 해소에 긍정적 계기가 될 수 있다고 평가하며,
+            양국 간 새로운 통상 질서 정립에 주목했다.
+        </description>
+        <url>https://test.example.com/chosun/trade-tariff-1</url>
+    </article>
+
+    <article>
+        <publisher name="한겨레" country="KR" politicalLeaning="PROGRESSIVE"/>
+        <headline>미중 관세 전쟁 전면화… 글로벌 공급망 흔들리고 서민 물가 직격탄</headline>
+        <description>
+            미국과 중국의 무역 갈등이 전면전으로 치닫으면서 글로벌 공급망이 요동치고 있다.
+            국내 수출 중소기업과 저소득 가계가 받을 충격이 우려되며, 정부의 선제적 대응 마련이 시급하다는 목소리가 높아지고 있다.
+        </description>
+        <url>https://test.example.com/hani/trade-tariff-1</url>
+    </article>
+
+</test-articles>

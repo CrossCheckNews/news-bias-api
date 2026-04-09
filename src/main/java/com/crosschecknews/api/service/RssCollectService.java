@@ -43,7 +43,7 @@ public class RssCollectService {
     private FeedCollectResult collectOne(FeedSource source) {
         log.info("RSS 수집 시작 [{}] url={}", source.name(), source.getRssUrl());
         try {
-            List<ArticleCandidate> candidates = rssFetchService.fetch(source.getRssUrl())
+            List<ArticleCandidate> candidates = rssFetchService.fetchWithCode(source.name(), source.getRssUrl())
                     .stream()
                     .map(entry -> ArticleCandidate.of(source, entry))
                     .toList();

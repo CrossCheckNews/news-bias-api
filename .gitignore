@@ -13,6 +13,8 @@ Thumbs.db
 # Environment / Config
 src/main/resources/application-*.yml
 src/main/resources/application-*.properties
+.env
+.env.*
 
 ### STS ###
 .apt_generated

@@ -7,7 +7,11 @@
       "Skill(bkit:pdca)",
       "Bash(./gradlew compileJava)",
       "Bash(curl -s \"https://www.chosun.com/arc/outboundfeeds/rss/category/international/?outputType=xml\")",
-      "Bash(curl -s \"https://www.hani.co.kr/rss/international\")"
+      "Bash(curl -s \"https://www.hani.co.kr/rss/international\")",
+      "Bash(./gradlew compileJava compileTestJava)",
+      "Bash(./gradlew clean:*)",
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(curl -s -X POST https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent -H 'Content-Type: application/json' -H 'x-goog-api-key: __CMDSUB_OUTPUT__')"
     ]
   }
 }
