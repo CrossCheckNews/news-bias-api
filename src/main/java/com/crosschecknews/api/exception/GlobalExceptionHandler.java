@@ -40,6 +40,9 @@ public class GlobalExceptionHandler {
     /** Gemini AI 호출 실패 */
     @ExceptionHandler(GeminiException.class)
     public ResponseEntity<ErrorResponse> handleGemini(GeminiException ex) {
+        if (ex.getMessage() != null && ex.getMessage().contains("429")) {
+            return error(HttpStatus.TOO_MANY_REQUESTS, "Gemini API rate limit exceeded. Please wait and retry.");
+        }
         return error(HttpStatus.BAD_GATEWAY, "AI service error: " + ex.getMessage());
     }
 

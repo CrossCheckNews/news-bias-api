@@ -1,6 +1,10 @@
 package com.crosschecknews.api.controller;
 
+import com.crosschecknews.api.domain.Category;
+import com.crosschecknews.api.dto.ClusteringResult;
+import com.crosschecknews.api.dto.FetchAndSaveResult;
 import com.crosschecknews.api.dto.PipelineResult;
+import com.crosschecknews.api.dto.SummarizeResponse;
 import com.crosschecknews.api.service.NewsIngestionPipelineService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -29,16 +33,37 @@ class PipelineControllerTest {
     @MockitoBean NewsIngestionPipelineService pipelineService;
 
     private PipelineResult stubResult(int fetched, int saved) {
-        return PipelineResult.builder()
+        FetchAndSaveResult fetchAndSave = FetchAndSaveResult.builder()
                 .fetchedCount(fetched)
                 .savedCount(saved)
                 .duplicateCount(0)
+                .failedCount(0)
+                .feeds(List.of())
+                .executedAt(LocalDateTime.of(2026, 4, 7, 0, 0))
+                .build();
+
+        ClusteringResult clustering = ClusteringResult.builder()
+                .category(Category.WORLD)
+                .fromHours(48)
+                .scannedArticleCount(4)
                 .clustersCreated(2)
                 .linkedArticleCount(4)
-                .summariesGenerated(2)
-                .failedSources(List.of())
-                .failedCategories(List.of())
-                .summaryFailedCount(0)
+                .topics(List.of())
+                .executedAt(LocalDateTime.of(2026, 4, 7, 0, 0))
+                .build();
+
+        SummarizeResponse summary = SummarizeResponse.builder()
+                .topicId(1L)
+                .title("Test Topic")
+                .summary("Test summary")
+                .aiModel("gemini")
+                .generatedAt(LocalDateTime.of(2026, 4, 7, 0, 0))
+                .build();
+
+        return PipelineResult.builder()
+                .fetchAndSave(fetchAndSave)
+                .clustering(List.of(clustering))
+                .summaries(List.of(summary))
                 .executedAt(LocalDateTime.of(2026, 4, 7, 0, 0))
                 .build();
     }
@@ -49,10 +74,10 @@ class PipelineControllerTest {
 
         mockMvc.perform(post("/api/v1/pipeline/collect"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.fetchedCount").value(10))
-                .andExpect(jsonPath("$.savedCount").value(8))
-                .andExpect(jsonPath("$.clustersCreated").value(2))
-                .andExpect(jsonPath("$.summariesGenerated").value(2));
+                .andExpect(jsonPath("$.fetchAndSave.fetchedCount").value(10))
+                .andExpect(jsonPath("$.fetchAndSave.savedCount").value(8))
+                .andExpect(jsonPath("$.clustering[0].clustersCreated").value(2))
+                .andExpect(jsonPath("$.summaries.length()").value(1));
 
         verify(pipelineService).run(null);
     }
@@ -65,8 +90,8 @@ class PipelineControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"fromHours\": 24}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.fetchedCount").value(5))
-                .andExpect(jsonPath("$.savedCount").value(5));
+                .andExpect(jsonPath("$.fetchAndSave.fetchedCount").value(5))
+                .andExpect(jsonPath("$.fetchAndSave.savedCount").value(5));
     }
 
     @Test
@@ -86,25 +111,38 @@ class PipelineControllerTest {
     }
 
     @Test
-    void 파이프라인_결과에_failedSources가_포함된다() throws Exception {
-        PipelineResult resultWithFailure = PipelineResult.builder()
-                .fetchedCount(10)
-                .savedCount(8)
+    void 파이프라인_결과에_피드별_수집실패_정보가_포함된다() throws Exception {
+        FetchAndSaveResult.FeedSummary failedFeed = FetchAndSaveResult.FeedSummary.builder()
+                .feedSourceCode("BBC_WORLD")
+                .publisherName("BBC")
+                .collectSuccess(false)
+                .fetched(0).saved(0).duplicates(0).failed(0)
+                .errorMessage("Connection timeout")
+                .build();
+
+        FetchAndSaveResult fetchAndSave = FetchAndSaveResult.builder()
+                .fetchedCount(0)
+                .savedCount(0)
                 .duplicateCount(0)
-                .clustersCreated(1)
-                .linkedArticleCount(2)
-                .summariesGenerated(1)
-                .failedSources(List.of("BBC_WORLD"))
-                .failedCategories(List.of())
-                .summaryFailedCount(0)
+                .failedCount(1)
+                .feeds(List.of(failedFeed))
                 .executedAt(LocalDateTime.of(2026, 4, 7, 0, 0))
                 .build();
-        given(pipelineService.run(any())).willReturn(resultWithFailure);
+
+        PipelineResult result = PipelineResult.builder()
+                .fetchAndSave(fetchAndSave)
+                .clustering(List.of())
+                .summaries(List.of())
+                .executedAt(LocalDateTime.of(2026, 4, 7, 0, 0))
+                .build();
+
+        given(pipelineService.run(any())).willReturn(result);
 
         mockMvc.perform(post("/api/v1/pipeline/collect")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"fromHours\": 48}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.failedSources[0]").value("BBC_WORLD"));
+                .andExpect(jsonPath("$.fetchAndSave.feeds[0].feedSourceCode").value("BBC_WORLD"))
+                .andExpect(jsonPath("$.fetchAndSave.feeds[0].collectSuccess").value(false));
     }
 }

@@ -1,6 +1,6 @@
 package com.crosschecknews.api.service;
 
-import com.crosschecknews.api.client.GeminiClient;
+import com.crosschecknews.api.client.FallbackAiClient;
 import com.crosschecknews.api.domain.Topic;
 import com.crosschecknews.api.domain.TopicArticle;
 import com.crosschecknews.api.domain.TopicStatus;
@@ -24,7 +24,7 @@ public class AiSummaryService {
 
     private final TopicRepository topicRepository;
     private final TopicArticleRepository topicArticleRepository;
-    private final GeminiClient geminiClient;
+    private final FallbackAiClient geminiClient;
     private final PromptBuilder promptBuilder;
 
     /**

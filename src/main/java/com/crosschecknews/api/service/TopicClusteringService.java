@@ -6,60 +6,66 @@ import com.crosschecknews.api.dto.ClusteringResult;
 import com.crosschecknews.api.repository.ArticleRepository;
 import com.crosschecknews.api.repository.TopicArticleRepository;
 import com.crosschecknews.api.repository.TopicRepository;
+import com.crosschecknews.api.util.CosineUtil;
+import com.crosschecknews.api.util.TfIdfVectorizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class TopicClusteringService {
 
-    /** 이 값 이상이면 동일 이슈로 판단 */
-    private static final double SIMILARITY_THRESHOLD = 0.25;
+    @Value("${clustering.similarity-threshold:0.78}")
+    private double similarityThreshold;
 
-    /** Topic이 되려면 최소 몇 개의 서로 다른 언론사여야 하는가 */
-    private static final int MIN_PUBLISHERS = 2;
+    @Value("${clustering.min-publishers:2}")
+    private int minPublishers;
 
-    private final ArticleRepository        articleRepository;
-    private final TopicRepository          topicRepository;
-    private final TopicArticleRepository   topicArticleRepository;
-    private final HeadlineSimilarityService similarityService;
+    private final ArticleRepository         articleRepository;
+    private final TopicRepository           topicRepository;
+    private final TopicArticleRepository    topicArticleRepository;
 
     @Transactional
     public ClusteringResult cluster(ClusteringRequest request) {
         LocalDateTime since = LocalDateTime.now().minusHours(request.getFromHours());
 
-        // 1. 후보 기사 조회 (ACTIVE Topic에 미연결)
+        // 1. 후보 기사 조회
         List<Article> candidates = articleRepository.findClusteringCandidates(request.getCategory(), since);
-        log.info("클러스터링 시작 category={} fromHours={} candidates={}",
-                request.getCategory(), request.getFromHours(), candidates.size());
+        log.info("클러스터링 시작 category={} fromHours={} candidates={} threshold={}",
+                request.getCategory(), request.getFromHours(), candidates.size(), similarityThreshold);
 
-        if (candidates.size() < MIN_PUBLISHERS) {
+        if (candidates.size() < minPublishers) {
+            log.info("후보 기사 부족 ({}개) → 클러스터링 생략", candidates.size());
             return emptyResult(request, candidates.size());
         }
 
-        // 2. 유사도 기반 Union-Find 클러스터링
-        List<List<Article>> clusters = buildClusters(candidates);
+        // 2. TF-IDF 벡터 계산 (코퍼스 전체 기준으로 IDF 산출)
+        Map<Long, double[]> tfidfVectors = computeTfIdf(candidates);
+        log.info("TF-IDF 벡터화 완료 articles={}", candidates.size());
 
-        // 3. 유효 클러스터 필터 (MIN_PUBLISHERS 이상 다른 언론사)
+        // 3. Union-Find 클러스터링
+        List<List<Article>> clusters = buildClusters(candidates, tfidfVectors);
+
+        // 4. 유효 클러스터 필터
         List<List<Article>> validClusters = clusters.stream()
                 .filter(this::isValidCluster)
                 .toList();
 
-        log.info("유효 클러스터 수: {}", validClusters.size());
+        log.info("클러스터 생성 완료 total={} valid={}", clusters.size(), validClusters.size());
 
-        // 4. Topic + TopicArticle 저장
+        // 5. Topic + TopicArticle 저장
         int linkedCount = 0;
         List<ClusteringResult.TopicSummary> summaries = new ArrayList<>();
 
         for (List<Article> cluster : validClusters) {
-            Topic topic = createTopic(cluster, request.getCategory());
+            Topic topic = createTopic(cluster, request.getCategory(), tfidfVectors);
             topicRepository.save(topic);
 
             List<String> publishers = new ArrayList<>();
@@ -90,6 +96,8 @@ public class TopicClusteringService {
                     topic.getId(), topic.getTitle(), cluster.size(), distinctPublishers);
         }
 
+        log.info("클러스터링 완료 topicsCreated={} linkedArticles={}", validClusters.size(), linkedCount);
+
         return ClusteringResult.builder()
                 .category(request.getCategory())
                 .fromHours(request.getFromHours())
@@ -101,30 +109,56 @@ public class TopicClusteringService {
                 .build();
     }
 
+    // ── TF-IDF 벡터화 ─────────────────────────────────────────────────────────
+
+    /**
+     * 후보 기사 전체를 코퍼스로 삼아 TF-IDF 벡터를 계산한다.
+     * IDF는 코퍼스 전체 기준이므로, 기사가 많을수록 희귀 단어의 가중치가 높아진다.
+     *
+     * @return articleId → TF-IDF 벡터
+     */
+    private Map<Long, double[]> computeTfIdf(List<Article> articles) {
+        List<String> headlines = articles.stream()
+                .map(Article::getHeadline)
+                .toList();
+
+        double[][] vectors = TfIdfVectorizer.vectorize(headlines);
+
+        Map<Long, double[]> result = new HashMap<>();
+        for (int i = 0; i < articles.size(); i++) {
+            result.put(articles.get(i).getId(), vectors[i]);
+        }
+        return result;
+    }
+
     // ── 클러스터 생성 (Union-Find) ─────────────────────────────────────────────
 
-    private List<List<Article>> buildClusters(List<Article> articles) {
+    private List<List<Article>> buildClusters(List<Article> articles, Map<Long, double[]> embeddings) {
         int n = articles.size();
         int[] parent = new int[n];
         for (int i = 0; i < n; i++) parent[i] = i;
 
+        int pairCount = 0, unionCount = 0;
+
         for (int i = 0; i < n; i++) {
             for (int j = i + 1; j < n; j++) {
-                double sim = similarityService.similarity(
-                        articles.get(i).getNormalizedHeadline(),
-                        articles.get(j).getNormalizedHeadline()
+                pairCount++;
+                double sim = CosineUtil.cosine(
+                        embeddings.get(articles.get(i).getId()),
+                        embeddings.get(articles.get(j).getId())
                 );
-                if (sim >= SIMILARITY_THRESHOLD) {
+                if (sim >= similarityThreshold) {
                     union(parent, i, j);
+                    unionCount++;
                 }
             }
         }
 
-        // root별로 그룹화
+        log.info("쌍 비교 완료 pairs={} unions={}", pairCount, unionCount);
+
         Map<Integer, List<Article>> groups = new HashMap<>();
         for (int i = 0; i < n; i++) {
-            int root = find(parent, i);
-            groups.computeIfAbsent(root, k -> new ArrayList<>()).add(articles.get(i));
+            groups.computeIfAbsent(find(parent, i), k -> new ArrayList<>()).add(articles.get(i));
         }
 
         return new ArrayList<>(groups.values());
@@ -145,13 +179,13 @@ public class TopicClusteringService {
         long distinctPublishers = cluster.stream()
                 .map(a -> a.getPublisher().getId())
                 .distinct().count();
-        return distinctPublishers >= MIN_PUBLISHERS;
+        return distinctPublishers >= minPublishers;
     }
 
     // ── Topic 생성 ─────────────────────────────────────────────────────────────
 
-    private Topic createTopic(List<Article> cluster, Category category) {
-        String title = pickRepresentativeTitle(cluster);
+    private Topic createTopic(List<Article> cluster, Category category, Map<Long, double[]> embeddings) {
+        String title = pickRepresentativeTitle(cluster, embeddings);
         return Topic.builder()
                 .title(title)
                 .category(category)
@@ -166,19 +200,18 @@ public class TopicClusteringService {
     }
 
     /**
-     * 클러스터 내 다른 기사들과 총 유사도가 가장 높은 기사의 헤드라인을 Topic 제목으로 사용.
-     * (= 클러스터 내 centroid 기사)
+     * 클러스터 내 다른 기사들과 cosine similarity 합이 가장 높은 기사(centroid)의 원본 headline을 Topic 제목으로 사용.
      */
-    private String pickRepresentativeTitle(List<Article> cluster) {
+    private String pickRepresentativeTitle(List<Article> cluster, Map<Long, double[]> embeddings) {
         if (cluster.size() == 1) return cluster.get(0).getHeadline();
 
         return cluster.stream()
                 .max(Comparator.comparingDouble(article ->
                         cluster.stream()
                                 .filter(other -> !other.getId().equals(article.getId()))
-                                .mapToDouble(other -> similarityService.similarity(
-                                        article.getNormalizedHeadline(),
-                                        other.getNormalizedHeadline()))
+                                .mapToDouble(other -> CosineUtil.cosine(
+                                        embeddings.get(article.getId()),
+                                        embeddings.get(other.getId())))
                                 .sum()
                 ))
                 .map(Article::getHeadline)

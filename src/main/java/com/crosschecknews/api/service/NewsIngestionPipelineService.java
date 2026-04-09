@@ -29,30 +29,25 @@ public class NewsIngestionPipelineService {
         log.info("파이프라인 시작 fromHours={}", fromHours);
 
         // ── Stage 1~3: RSS 수집 + 정규화 + 저장 ─────────────────────────────
-        FetchAndSaveResult saveResult = runFetchAndSave();
+        FetchAndSaveResult fetchAndSave = runFetchAndSave();
 
         // ── Stage 4: 카테고리별 클러스터링 ───────────────────────────────────
-        ClusteringSummary clusteringSummary = runClustering(fromHours);
+        List<ClusteringResult> clustering = runClustering(fromHours);
 
         // ── Stage 5: AI 요약 ─────────────────────────────────────────────────
-        SummarySummary summarySummary = runSummarize();
+        List<SummarizeResponse> summaries = runSummarize();
 
         PipelineResult result = PipelineResult.builder()
-                .fetchedCount(saveResult.getFetchedCount())
-                .savedCount(saveResult.getSavedCount())
-                .duplicateCount(saveResult.getDuplicateCount())
-                .clustersCreated(clusteringSummary.clustersCreated)
-                .linkedArticleCount(clusteringSummary.linkedArticleCount)
-                .summariesGenerated(summarySummary.generated)
-                .failedSources(failedSources(saveResult))
-                .failedCategories(clusteringSummary.failedCategories)
-                .summaryFailedCount(summarySummary.failed)
+                .fetchAndSave(fetchAndSave)
+                .clustering(clustering)
+                .summaries(summaries)
                 .executedAt(LocalDateTime.now())
                 .build();
 
         log.info("파이프라인 완료 fetched={} saved={} clusters={} summaries={}",
-                result.getFetchedCount(), result.getSavedCount(),
-                result.getClustersCreated(), result.getSummariesGenerated());
+                fetchAndSave.getFetchedCount(), fetchAndSave.getSavedCount(),
+                clustering.stream().mapToInt(ClusteringResult::getClustersCreated).sum(),
+                summaries.size());
 
         return result;
     }
@@ -74,47 +69,31 @@ public class NewsIngestionPipelineService {
         }
     }
 
-    private ClusteringSummary runClustering(int fromHours) {
-        int totalClusters = 0, totalLinked = 0;
-        List<String> failedCategories = new ArrayList<>();
+    private List<ClusteringResult> runClustering(int fromHours) {
+        List<ClusteringResult> results = new ArrayList<>();
 
         for (Category category : Category.values()) {
             try {
                 ClusteringRequest req = new ClusteringRequest(category, fromHours);
                 ClusteringResult result = topicClusteringService.cluster(req);
-                totalClusters += result.getClustersCreated();
-                totalLinked   += result.getLinkedArticleCount();
+                results.add(result);
                 log.info("[Stage 4] 클러스터링 완료 category={} clusters={} linked={}",
                         category, result.getClustersCreated(), result.getLinkedArticleCount());
             } catch (Exception e) {
-                failedCategories.add(category.name());
                 log.error("[Stage 4] 클러스터링 실패 category={} cause={}", category, e.getMessage(), e);
             }
         }
-        return new ClusteringSummary(totalClusters, totalLinked, failedCategories);
+        return results;
     }
 
-    private SummarySummary runSummarize() {
+    private List<SummarizeResponse> runSummarize() {
         try {
             List<SummarizeResponse> results = aiSummaryService.summarizeAll();
             log.info("[Stage 5] AI 요약 완료 generated={}", results.size());
-            return new SummarySummary(results.size(), 0);
+            return results;
         } catch (Exception e) {
             log.error("[Stage 5] AI 요약 전체 실패: {}", e.getMessage(), e);
-            return new SummarySummary(0, 1);
+            return List.of();
         }
     }
-
-    private List<String> failedSources(FetchAndSaveResult result) {
-        if (result.getFeeds() == null) return List.of();
-        return result.getFeeds().stream()
-                .filter(f -> !f.isCollectSuccess())
-                .map(FetchAndSaveResult.FeedSummary::getFeedSourceCode)
-                .toList();
-    }
-
-    // ── 내부 집계용 record ────────────────────────────────────────────────────
-
-    private record ClusteringSummary(int clustersCreated, int linkedArticleCount, List<String> failedCategories) {}
-    private record SummarySummary(int generated, int failed) {}
 }

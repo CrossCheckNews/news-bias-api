@@ -4,18 +4,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
 
 @Slf4j
 @Component
-public class GeminiClient {
+public class GeminiClient implements AiClient {
 
     private static final String API_URL =
             "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent";
 
-    @Value("${gemini.api.key}")
+    @Value("${gemini.api.key:}")
     private String apiKey;
 
     @Value("${gemini.model:gemini-2.0-flash}")
@@ -27,22 +28,37 @@ public class GeminiClient {
         this.restClient = RestClient.create();
     }
 
+    public boolean isAvailable() {
+        return apiKey != null && !apiKey.isBlank();
+    }
+
     /**
      * 프롬프트를 Gemini에 전송하고 생성된 텍스트를 반환한다.
      */
+    @Override
     public String generate(String prompt) {
+        if (!isAvailable()) {
+            throw new GeminiException("Gemini API key is not configured");
+        }
         GeminiRequest request = new GeminiRequest(
                 List.of(new GeminiRequest.Content(
                         List.of(new GeminiRequest.Content.Part(prompt))
                 ))
         );
 
-        GeminiResponse response = restClient.post()
-                .uri(API_URL + "?key={key}", model, apiKey)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(request)
-                .retrieve()
-                .body(GeminiResponse.class);
+        GeminiResponse response;
+        try {
+            response = restClient.post()
+                    .uri(API_URL + "?key={key}", model, apiKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .body(GeminiResponse.class);
+        } catch (HttpClientErrorException.TooManyRequests e) {
+            throw new GeminiException("Gemini API rate limit exceeded (429). Please wait and retry.", e);
+        } catch (HttpClientErrorException e) {
+            throw new GeminiException("Gemini API error " + e.getStatusCode() + ": " + e.getMessage(), e);
+        }
 
         if (response == null
                 || response.candidates() == null
@@ -62,6 +78,7 @@ public class GeminiClient {
         return text.strip();
     }
 
+    @Override
     public String getModel() {
         return model;
     }
