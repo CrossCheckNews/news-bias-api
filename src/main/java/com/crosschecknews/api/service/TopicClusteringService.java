@@ -118,11 +118,16 @@ public class TopicClusteringService {
      * @return articleId → TF-IDF 벡터
      */
     private Map<Long, double[]> computeTfIdf(List<Article> articles) {
-        List<String> headlines = articles.stream()
-                .map(Article::getHeadline)
+        List<String> comparisonTexts = articles.stream()
+                .map(a -> {
+                    String desc = a.getDescription();
+                    return (desc != null && !desc.isBlank())
+                            ? a.getHeadline() + " " + desc
+                            : a.getHeadline();
+                })
                 .toList();
 
-        double[][] vectors = TfIdfVectorizer.vectorize(headlines);
+        double[][] vectors = TfIdfVectorizer.vectorize(comparisonTexts);
 
         Map<Long, double[]> result = new HashMap<>();
         for (int i = 0; i < articles.size(); i++) {
