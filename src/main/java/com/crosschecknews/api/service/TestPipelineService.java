@@ -1,125 +1,104 @@
 package com.crosschecknews.api.service;
 
-import com.crosschecknews.api.client.FallbackAiClient;
-import com.crosschecknews.api.domain.*;
-import com.crosschecknews.api.dto.TestPipelineResult;
+import com.crosschecknews.api.domain.Category;
+import com.crosschecknews.api.domain.TopicArticle;
+import com.crosschecknews.api.dto.*;
+import com.crosschecknews.api.repository.TopicArticleRepository;
+import com.crosschecknews.api.util.TfIdfVectorizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
- * DB를 거치지 않고 XML 파일에서 기사를 읽어 파이프라인 3단계를 검증한다.
+ * RSS fixture XML → DB 저장 → 클러스터링 → AI 요약 전체 파이프라인을 실행한다.
  *
- * <p>Step 1: XML 파싱 (fetch-save 대체)
- * <p>Step 2: 전체 기사를 하나의 토픽으로 묶음 (clustering 대체)
- * <p>Step 3: Gemini 호출로 AI 요약 생성 (summarize)
+ * <p>/api/v1/pipeline/collect 와 동일한 흐름이되, rss.use-fixture=true 설정 시
+ * 네트워크 대신 src/main/resources/rss-fixtures/*.xml 파일에서 기사를 읽는다.
+ * 각 기사의 TF-IDF 토큰을 응답에 포함해 전처리 파이프라인을 함께 검증할 수 있다.
+ *
+ * <p>Step 1: RSS fixture → 정규화 → DB 저장 (ArticleSaveService)
+ * <p>Step 2: TF-IDF 클러스터링 → Topic + TopicArticle DB 저장 (TopicClusteringService)
+ * <p>Step 3: AI 요약 생성 (AiSummaryService)
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class TestPipelineService {
 
-    private static final String TEST_DATA_PATH = "test-data/test-articles.xml";
-
-    private final FallbackAiClient geminiClient;
-    private final PromptBuilder promptBuilder;
+    private final ArticleSaveService     articleSaveService;
+    private final TopicClusteringService topicClusteringService;
+    private final AiSummaryService       aiSummaryService;
+    private final TopicArticleRepository topicArticleRepository;
 
     public TestPipelineResult run() {
-        // Step 1: XML 파싱
-        List<TopicArticle> topicArticles = loadArticlesFromXml();
-        log.info("[Test Step 1] XML 파싱 완료 articles={}", topicArticles.size());
+        // Step 1: fixture XML 읽기 → 정규화 → DB 저장
+        FetchAndSaveResult fetchAndSave = articleSaveService.fetchAndSave(null);
+        log.info("[Test Step 1] 수집/저장 완료 fetched={} saved={} duplicates={}",
+                fetchAndSave.getFetchedCount(), fetchAndSave.getSavedCount(), fetchAndSave.getDuplicateCount());
 
-        // Step 2: 전체를 하나의 토픽으로 그룹화 (첫 번째 기사 헤드라인을 토픽 제목으로 사용)
-        String topicTitle = topicArticles.get(0).getArticle().getHeadline();
-        log.info("[Test Step 2] 토픽 그룹화 완료 title='{}'", topicTitle);
+        // Step 2: TF-IDF 클러스터링 + DB 저장, 생성된 토픽별 기사 조회
+        List<TestPipelineResult.TopicResult> topics = buildTopicResults();
+        log.info("[Test Step 2] 클러스터링 완료 topics={}", topics.size());
 
         // Step 3: AI 요약
-        String prompt = promptBuilder.buildSummaryPrompt(topicArticles);
-        String aiSummary = geminiClient.generate(prompt);
-        String aiModel = geminiClient.getModel();
-        log.info("[Test Step 3] AI 요약 완료 model={} chars={}", aiModel, aiSummary.length());
-
-        List<TestPipelineResult.ArticleInfo> articleInfos = topicArticles.stream()
-                .map(ta -> TestPipelineResult.ArticleInfo.builder()
-                        .publisher(ta.getArticle().getPublisher().getName())
-                        .country(ta.getArticle().getPublisher().getCountry().name())
-                        .politicalLeaning(ta.getArticle().getPublisher().getPoliticalLeaning().name())
-                        .headline(ta.getArticle().getHeadline())
-                        .description(ta.getArticle().getDescription())
-                        .build())
-                .toList();
+        List<SummarizeResponse> summaries = aiSummaryService.summarizeAll();
+        log.info("[Test Step 3] AI 요약 완료 generated={}", summaries.size());
 
         return TestPipelineResult.builder()
+                .fetchAndSave(fetchAndSave)
+                .topics(topics)
+                .summaries(summaries)
+                .executedAt(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * 모든 카테고리를 클러스터링하고, 생성된 토픽에 연결된 기사 목록을 조회해 반환한다.
+     * 기사마다 TfIdfVectorizer.tokenize() 결과를 포함한다.
+     */
+    private List<TestPipelineResult.TopicResult> buildTopicResults() {
+        return Arrays.stream(Category.values())
+                .flatMap(category -> {
+                    try {
+                        ClusteringResult result = topicClusteringService.cluster(
+                                new ClusteringRequest(category, 24));
+                        return result.getTopics().stream()
+                                .map(s -> toTopicResult(s.getTopicId(), s.getTitle()));
+                    } catch (Exception e) {
+                        log.error("[Test Step 2] 클러스터링 실패 category={} cause={}", category, e.getMessage(), e);
+                        return Stream.empty();
+                    }
+                })
+                .toList();
+    }
+
+    private TestPipelineResult.TopicResult toTopicResult(Long topicId, String title) {
+        List<TopicArticle> topicArticles = topicArticleRepository.findByTopicIdWithDetails(topicId);
+
+        List<TestPipelineResult.ArticleInfo> articleInfos = topicArticles.stream()
+                .map(ta -> {
+                    String headline = ta.getArticle().getHeadline();
+                    return TestPipelineResult.ArticleInfo.builder()
+                            .publisher(ta.getArticle().getPublisher().getName())
+                            .country(ta.getArticle().getPublisher().getCountry().name())
+                            .politicalLeaning(ta.getArticle().getPublisher().getPoliticalLeaning().name())
+                            .headline(headline)
+                            .normalizedHeadline(ta.getArticle().getNormalizedHeadline())
+                            .tokens(TfIdfVectorizer.tokenize(headline))
+                            .description(ta.getArticle().getDescription())
+                            .build();
+                })
+                .toList();
+
+        return TestPipelineResult.TopicResult.builder()
+                .topicId(topicId)
+                .title(title)
                 .articles(articleInfos)
-                .topicTitle(topicTitle)
-                .aiSummary(aiSummary)
-                .aiModel(aiModel)
-                .generatedAt(LocalDateTime.now())
                 .build();
-    }
-
-    // ── XML 파싱 ──────────────────────────────────────────────────────────────
-
-    private List<TopicArticle> loadArticlesFromXml() {
-        try (InputStream is = new ClassPathResource(TEST_DATA_PATH).getInputStream()) {
-            Document doc = DocumentBuilderFactory.newInstance()
-                    .newDocumentBuilder()
-                    .parse(is);
-            doc.getDocumentElement().normalize();
-
-            NodeList nodes = doc.getElementsByTagName("article");
-            List<TopicArticle> result = new ArrayList<>();
-
-            for (int i = 0; i < nodes.getLength(); i++) {
-                Element el = (Element) nodes.item(i);
-                result.add(toTopicArticle(el));
-            }
-
-            return result;
-        } catch (Exception e) {
-            throw new IllegalStateException("테스트 XML 파일 로드 실패: " + TEST_DATA_PATH, e);
-        }
-    }
-
-    private TopicArticle toTopicArticle(Element el) {
-        Element pub = (Element) el.getElementsByTagName("publisher").item(0);
-
-        Publisher publisher = Publisher.builder()
-                .name(pub.getAttribute("name"))
-                .country(Country.valueOf(pub.getAttribute("country")))
-                .politicalLeaning(PoliticalLeaning.valueOf(pub.getAttribute("politicalLeaning")))
-                .build();
-
-        Article article = Article.builder()
-                .headline(text(el, "headline"))
-                .normalizedHeadline(text(el, "headline").toLowerCase().trim())
-                .url(text(el, "url"))
-                .normalizedUrl(text(el, "url"))
-                .description(text(el, "description").trim())
-                .category(Category.WORLD)
-                .rssGuid(text(el, "url"))
-                .dedupeKey("test-" + text(el, "url"))
-                .publisher(publisher)
-                .build();
-
-        return TopicArticle.builder()
-                .article(article)
-                .build();
-    }
-
-    private String text(Element parent, String tagName) {
-        NodeList nodes = parent.getElementsByTagName(tagName);
-        if (nodes.getLength() == 0) return "";
-        return nodes.item(0).getTextContent().strip();
     }
 }
