@@ -10,16 +10,24 @@ import java.util.List;
 @Builder
 public class TestPipelineResult {
 
-    // Step 1: 파싱 결과
-    private List<ArticleInfo> articles;
+    /** Step 1: RSS fixture 수집 + DB 저장 결과 */
+    private FetchAndSaveResult fetchAndSave;
 
-    // Step 2: 클러스터링 결과 (테스트이므로 전체를 하나의 토픽으로 묶음)
-    private String topicTitle;
+    /** Step 2: 클러스터링으로 생성된 토픽 목록 (각 토픽에 연결된 기사 포함) */
+    private List<TopicResult> topics;
 
-    // Step 3: AI 요약 결과
-    private String aiSummary;
-    private String aiModel;
-    private LocalDateTime generatedAt;
+    /** Step 3: AI 요약 결과 */
+    private List<SummarizeResponse> summaries;
+
+    private LocalDateTime executedAt;
+
+    @Getter
+    @Builder
+    public static class TopicResult {
+        private Long topicId;
+        private String title;
+        private List<ArticleInfo> articles;
+    }
 
     @Getter
     @Builder
@@ -28,6 +36,9 @@ public class TestPipelineResult {
         private String country;
         private String politicalLeaning;
         private String headline;
+        private String normalizedHeadline;
+        /** TfIdfVectorizer.tokenize() 결과 — 전처리 파이프라인 검증용 */
+        private List<String> tokens;
         private String description;
     }
 }

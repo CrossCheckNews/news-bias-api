@@ -18,16 +18,21 @@ public class TestPipelineController {
     private final TestPipelineService testPipelineService;
 
     @Operation(
-            summary = "[Test] XML 파일 기반 파이프라인 전체 실행",
+            summary = "[Test] RSS fixture XML 기반 전체 파이프라인 실행",
             description = """
-                    DB 없이 src/main/resources/test-data/test-articles.xml을 읽어
-                    파이프라인 3단계를 순서대로 실행합니다.
+                    rss.use-fixture=true 설정 시 네트워크 대신 로컬 fixture XML 파일에서 기사를 읽어
+                    /api/v1/pipeline/collect 와 동일한 3단계 파이프라인을 실행합니다.
 
-                    - Step 1 (fetch): XML에서 기사 4건 파싱 (영어 보수/진보, 한국어 보수/진보)
-                    - Step 2 (cluster): 전체를 하나의 토픽으로 그룹화
-                    - Step 3 (summarize): Gemini API로 AI 요약 생성
+                    - Step 1 (fetch & save): rss-fixtures/*.xml 파싱 → 정규화 → DB 저장
+                    - Step 2 (cluster): TF-IDF 기반 토픽 클러스터링 → Topic + TopicArticle DB 저장
+                    - Step 3 (summarize): 요약이 없는 토픽에 AI 요약 생성
 
-                    GEMINI_API_KEY 환경변수가 설정되어 있어야 합니다.
+                    응답에는 각 토픽에 연결된 기사 목록과 TF-IDF 전처리 토큰이 포함되어
+                    전처리 파이프라인(stemming, alias, 복합어 병합 등)을 직접 검증할 수 있습니다.
+
+                    전제 조건:
+                    - application.properties에 rss.use-fixture=true 설정
+                    - src/main/resources/rss-fixtures/{FeedSourceCode}.xml 파일 존재
                     """
     )
     @PostMapping("/summarize")
