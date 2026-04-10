@@ -84,6 +84,76 @@ public final class TfIdfVectorizer {
         ALIAS = Collections.unmodifiableMap(m);
     }
 
+    // ── 한국어 → canonical 토큰 사전 ──────────────────────────────────────────
+    /**
+     * 한국어 표면형(조사 제거 후) → 영어 canonical 토큰.
+     * 영어 기사에서 동일 이슈를 표현하는 토큰과 일치하도록 정의한다.
+     *
+     * <p>수록 기준: 실제 수집 기사(FOX/NYT/조선/한겨레)에서 공통 이슈로 확인된 어휘만 포함.
+     * 창작 금지 — API 응답 데이터 기반으로만 추가.
+     */
+    private static final Map<String, String> KOREAN_ALIAS;
+    static {
+        Map<String, String> m = new LinkedHashMap<>();
+        // 인물
+        m.put("트럼프",   "donald_trump");
+        m.put("네타냐후", "netanyahu");
+        m.put("푸틴",     "putin");
+        m.put("밴스",     "vance");
+        m.put("젤렌스키", "zelensky");
+        m.put("시진핑",   "xi_jinping");
+        m.put("왕이",     "wang_yi");
+        m.put("하메네이", "khamenei");
+        m.put("모즈타바", "mojtaba");
+        // 국가·지역
+        m.put("이란",     "iran");
+        m.put("레바논",   "lebanon");
+        m.put("이스라엘", "israel");
+        m.put("나토",     "nato");
+        m.put("우크라이나", "ukraine");
+        m.put("파키스탄", "pakistan");
+        m.put("북한",     "north_korea");
+        m.put("대만",     "taiwan");
+        m.put("러시아",   "russia");
+        m.put("오만",     "oman");
+        m.put("헝가리",   "hungary");
+        // 조직·세력
+        m.put("헤즈볼라", "hezbollah");
+        m.put("백악관",   "white_house");
+        m.put("연준",     "federal_reserve");
+        // 핵심 어휘
+        m.put("휴전",   "cease_fire");
+        m.put("호르무즈", "hormuz");
+        m.put("통행료", "toll");
+        m.put("해협",   "strait");
+        m.put("우라늄", "uranium");
+        m.put("핵",     "nuclear");
+        m.put("공습",   "airstrike");
+        m.put("폭격",   "airstrike");
+        m.put("협상",   "negotiation");
+        m.put("제재",   "sanction");
+        m.put("증시",   "stock_market");
+        m.put("관세",   "tariff");
+        KOREAN_ALIAS = Collections.unmodifiableMap(m);
+    }
+
+    // ── 한국어 조사 목록 ───────────────────────────────────────────────────────
+    /**
+     * 긴 조사부터 시도해야 짧은 조사에 오매칭을 방지할 수 있다.
+     * 예: "에서" 를 "에" 보다 먼저 시도.
+     */
+    private static final String[] KOREAN_PARTICLES = {
+            "에서", "으로", "까지", "부터", "에게", "한테", "께서",
+            "이라", "라는", "이란", "라며", "이며",
+            "이고", "라고",
+            "이가", "이는", "이를", "이의",
+            "이나", "라도",
+            "으로", "로서",
+            "에서", "에서의",
+            "이서",
+            "은", "는", "이", "가", "을", "를", "의", "에", "로", "와", "과", "도", "만", "서"
+    };
+
     // ── 복합어 바이그램 목록 ───────────────────────────────────────────────────
     /**
      * 인접한 두 토큰(소문자 원형)이 이 목록에 해당하면 underscore 로 병합한다.
@@ -105,8 +175,30 @@ public final class TfIdfVectorizer {
         s.add("north_korea");
         s.add("federal_reserve");
         s.add("wall_street");
+        s.add("cease_fire");
         BIGRAMS = Collections.unmodifiableSet(s);
     }
+
+    // ── 강한 앵커 토큰 ────────────────────────────────────────────────────────
+    /**
+     * 특정 사건/행위자/대상을 좁혀주는 강한 앵커 토큰 집합.
+     *
+     * <p>선정 기준: 이 토큰을 공유한다는 것 자체가 같은 이슈일 가능성을 높여주는 토큰.
+     * 광범위하게 등장하는 토큰(donald_trump, united_states, nato 등)은 제외.
+     *
+     * <p>인물: 특정 인물 (트럼프 제외 — 미국 뉴스 대부분에 등장)
+     * <p>국가·세력: 현재 이슈의 핵심 행위자
+     * <p>특정 대상: 특정 이슈에만 등장하는 지명/물질
+     */
+    public static final Set<String> STRONG_CANONICAL = Set.of(
+            // 인물
+            "netanyahu", "putin", "zelensky", "xi_jinping", "wang_yi", "khamenei", "mojtaba", "vance",
+            // 국가·세력
+            "iran", "israel", "lebanon", "ukraine", "north_korea", "hezbollah",
+            "pakistan", "russia", "taiwan", "oman", "hungary",
+            // 특정 대상
+            "hormuz", "uranium"
+    );
 
     // ── stemming 후 보정 사전 ─────────────────────────────────────────────────
     /**
@@ -120,6 +212,18 @@ public final class TfIdfVectorizer {
     private TfIdfVectorizer() {}
 
     // ── 공개 API ──────────────────────────────────────────────────────────────
+
+    /**
+     * 텍스트에서 강한 앵커 토큰만 추출해 반환한다.
+     * union 조건의 보조 지표로 사용한다.
+     */
+    public static Set<String> strongCanonicalTokens(String text) {
+        Set<String> result = new HashSet<>();
+        for (String token : tokenize(text)) {
+            if (STRONG_CANONICAL.contains(token)) result.add(token);
+        }
+        return result;
+    }
 
     /**
      * 문서(headline) 목록을 TF-IDF 벡터 배열로 변환한다.
@@ -208,6 +312,11 @@ public final class TfIdfVectorizer {
             if (token.contains("_")) {
                 // 복합어(trade_war) 또는 정규화 토큰(NUM_PCT) — 그대로 보존
                 result.add(token);
+            } else if (isKorean(token)) {
+                // 한글 토큰: 조사 제거 후 KOREAN_ALIAS 조회, 없으면 조사만 제거한 형태 유지
+                String stripped = stripKoreanParticle(token);
+                String canonical = KOREAN_ALIAS.get(stripped);
+                result.add(canonical != null ? canonical : stripped);
             } else {
                 String aliased = ALIAS.get(token);
                 if (aliased != null) {
@@ -300,6 +409,42 @@ public final class TfIdfVectorizer {
 
     private static boolean isConsonant(char c) {
         return "bcdfghjklmnpqrstvwxyz".indexOf(c) >= 0;
+    }
+
+    // ── 한국어 처리 ────────────────────────────────────────────────────────────
+
+    /**
+     * 토큰에 한글 문자가 하나 이상 포함되면 한국어 토큰으로 판단한다.
+     *
+     * <p>normalizeText()의 NFKD 정규화로 인해 한글 음절(가-힣, AC00-D7A3)이
+     * 자모(ㄱ-ㅣ, 1100-11FF / 3130-318F)로 분해될 수 있다.
+     * 두 범위를 모두 체크해야 NFKD 변환 후에도 감지된다.
+     */
+    static boolean isKorean(String token) {
+        for (int i = 0; i < token.length(); i++) {
+            char c = token.charAt(i);
+            if (c >= '\uAC00' && c <= '\uD7A3') return true; // 한글 음절 (NFC)
+            if (c >= '\u1100' && c <= '\u11FF') return true; // 한글 자모 (NFKD 분해 후)
+            if (c >= '\u3130' && c <= '\u318F') return true; // 한글 호환 자모
+        }
+        return false;
+    }
+
+    /**
+     * 한글 토큰 끝에서 조사를 제거한다.
+     *
+     * <p>NFKD로 분해된 자모 형태일 수 있으므로 NFC로 재조합한 뒤 사전 조회한다.
+     * 예: "이란에서" (NFKD 자모) → NFC → "이란에서" → strip "에서" → "이란"
+     */
+    static String stripKoreanParticle(String token) {
+        // NFKD 분해 상태일 수 있으므로 NFC로 재조합
+        String nfc = Normalizer.normalize(token, Normalizer.Form.NFC);
+        for (String particle : KOREAN_PARTICLES) {
+            if (nfc.endsWith(particle) && nfc.length() > particle.length()) {
+                return nfc.substring(0, nfc.length() - particle.length());
+            }
+        }
+        return nfc;
     }
 
     /**

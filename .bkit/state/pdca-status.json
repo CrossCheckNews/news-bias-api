@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-10T07:05:52.438Z",
+  "lastUpdated": "2026-04-10T11:24:07.044Z",
   "activeFeatures": [
     "domain",
     "repository",
@@ -75,7 +75,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:31:56.447Z",
-        "lastUpdated": "2026-04-10T07:05:52.437Z"
+        "lastUpdated": "2026-04-10T11:24:07.043Z"
       },
       "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/service/TopicClusteringService.java"
     },
@@ -127,7 +127,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-07T22:59:00.455Z",
-        "lastUpdated": "2026-04-10T05:10:57.920Z"
+        "lastUpdated": "2026-04-10T11:22:50.990Z"
       },
       "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/util/TfIdfVectorizer.java"
     }
@@ -140,7 +140,7 @@
   "session": {
     "startedAt": "2026-04-04T08:15:47.494Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-10T07:05:52.438Z"
+    "lastActivity": "2026-04-10T11:24:07.044Z"
   },
   "history": [
     {
@@ -2029,6 +2029,78 @@
     },
     {
       "timestamp": "2026-04-10T07:05:52.438Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-10T10:24:09.339Z",
+      "feature": "util",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-10T10:24:36.609Z",
+      "feature": "util",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-10T10:26:10.059Z",
+      "feature": "util",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-10T10:42:23.404Z",
+      "feature": "util",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-10T10:43:56.673Z",
+      "feature": "util",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-10T11:07:35.269Z",
+      "feature": "util",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-10T11:22:36.972Z",
+      "feature": "util",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-10T11:22:50.991Z",
+      "feature": "util",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-10T11:22:59.468Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-10T11:23:15.591Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-10T11:23:37.174Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-10T11:24:07.044Z",
       "feature": "service",
       "phase": "do",
       "action": "updated"

@@ -25,6 +25,9 @@ public class TopicClusteringService {
     @Value("${clustering.similarity-threshold:0.78}")
     private double similarityThreshold;
 
+    @Value("${clustering.min-shared-canonical:1}")
+    private int minSharedCanonical;
+
     @Value("${clustering.min-publishers:2}")
     private int minPublishers;
 
@@ -50,8 +53,11 @@ public class TopicClusteringService {
         Map<Long, double[]> tfidfVectors = computeTfIdf(candidates);
         log.info("TF-IDF 벡터화 완료 articles={}", candidates.size());
 
-        // 3. Union-Find 클러스터링
-        List<List<Article>> clusters = buildClusters(candidates, tfidfVectors);
+        // 3. 강한 앵커 토큰 집합 계산
+        Map<Long, Set<String>> strongTokens = computeStrongTokens(candidates);
+
+        // 4. Union-Find 클러스터링
+        List<List<Article>> clusters = buildClusters(candidates, tfidfVectors, strongTokens);
 
         // 4. 유효 클러스터 필터
         List<List<Article>> validClusters = clusters.stream()
@@ -136,9 +142,23 @@ public class TopicClusteringService {
         return result;
     }
 
+    // ── 강한 앵커 토큰 계산 ────────────────────────────────────────────────────
+
+    private Map<Long, Set<String>> computeStrongTokens(List<Article> articles) {
+        Map<Long, Set<String>> result = new HashMap<>();
+        for (Article a : articles) {
+            String text = a.getDescription() != null && !a.getDescription().isBlank()
+                    ? a.getHeadline() + " " + a.getDescription()
+                    : a.getHeadline();
+            result.put(a.getId(), TfIdfVectorizer.strongCanonicalTokens(text));
+        }
+        return result;
+    }
+
     // ── 클러스터 생성 (Union-Find) ─────────────────────────────────────────────
 
-    private List<List<Article>> buildClusters(List<Article> articles, Map<Long, double[]> embeddings) {
+    private List<List<Article>> buildClusters(List<Article> articles, Map<Long, double[]> embeddings,
+                                              Map<Long, Set<String>> strongTokens) {
         int n = articles.size();
         int[] parent = new int[n];
         for (int i = 0; i < n; i++) parent[i] = i;
@@ -152,7 +172,9 @@ public class TopicClusteringService {
                         embeddings.get(articles.get(i).getId()),
                         embeddings.get(articles.get(j).getId())
                 );
-                if (sim >= similarityThreshold) {
+                if (sim >= similarityThreshold && sharedCanonicalCount(
+                        strongTokens.get(articles.get(i).getId()),
+                        strongTokens.get(articles.get(j).getId())) >= minSharedCanonical) {
                     union(parent, i, j);
                     unionCount++;
                 }
@@ -176,6 +198,14 @@ public class TopicClusteringService {
 
     private void union(int[] parent, int x, int y) {
         parent[find(parent, x)] = find(parent, y);
+    }
+
+    private int sharedCanonicalCount(Set<String> a, Set<String> b) {
+        int count = 0;
+        for (String token : a) {
+            if (b.contains(token)) count++;
+        }
+        return count;
     }
 
     // ── 유효성 검사 ────────────────────────────────────────────────────────────
