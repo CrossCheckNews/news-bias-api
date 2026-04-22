@@ -23,9 +23,6 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
     // Priority 3 — 최후 fallback (publisher + 제목 + 날짜 해시)
     boolean existsByDedupeKey(String dedupeKey);
 
-    // 하위 호환 (ArticleService.fetchFromRss용)
-    boolean existsByUrl(String url);
-
     // 클러스터링 후보: 특정 category + 시간 범위 + ACTIVE Topic에 미연결
     @Query("""
             SELECT a FROM Article a
