@@ -43,7 +43,7 @@ class PipelineControllerTest {
                 .build();
 
         ClusteringResult clustering = ClusteringResult.builder()
-                .articleCategory(ArticleCategory.WORLD)
+                .category(ArticleCategory.WORLD)
                 .fromHours(48)
                 .scannedArticleCount(4)
                 .clustersCreated(2)
