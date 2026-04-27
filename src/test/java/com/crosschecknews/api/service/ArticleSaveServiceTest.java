@@ -48,7 +48,7 @@ class ArticleSaveServiceTest {
                 .publisherName("Fox News")
                 .country(Country.US)
                 .politicalLeaning(PoliticalLeaning.CONSERVATIVE)
-                .articleCategory(ArticleCategory.WORLD)
+                .category(ArticleCategory.WORLD)
                 .headline(headline)
                 .url(url)
                 .rssGuid("guid-" + url.hashCode())
@@ -66,7 +66,7 @@ class ArticleSaveServiceTest {
                 .dedupeKey("key-" + url.hashCode())
                 .publishedAt(LocalDateTime.now())
                 .publisher(pub)
-                .articleCategory(ArticleCategory.WORLD)
+                .category(ArticleCategory.WORLD)
                 .build();
     }
 

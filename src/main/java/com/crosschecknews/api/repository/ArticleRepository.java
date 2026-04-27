@@ -27,7 +27,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
     @Query("""
             SELECT a FROM Article a
             JOIN FETCH a.publisher
-            WHERE a.articleCategory = :articleCategory
+            WHERE a.category = :category
               AND a.fetchedAt >= :since
               AND NOT EXISTS (
                   SELECT ta FROM TopicArticle ta
@@ -38,7 +38,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
             ORDER BY a.fetchedAt DESC
             """)
     List<Article> findClusteringCandidates(
-            @Param("articleCategory") ArticleCategory articleCategory,
+            @Param("category") ArticleCategory category,
             @Param("since") LocalDateTime since
     );
 }

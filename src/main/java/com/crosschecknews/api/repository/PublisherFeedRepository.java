@@ -8,5 +8,5 @@ import java.util.List;
 
 public interface PublisherFeedRepository extends JpaRepository<PublisherFeed, Long> {
     List<PublisherFeed> findAllByActiveTrue();
-    boolean existsByPublisherIdAndCategory(Long publisherId, ArticleCategory articleCategory);
+    boolean existsByPublisherIdAndArticleCategory(Long publisherId, ArticleCategory articleCategory);
 }

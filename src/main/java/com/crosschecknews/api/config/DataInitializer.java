@@ -37,7 +37,7 @@ public class DataInitializer implements ApplicationRunner {
                     });
 
             // PublisherFeed — 동일 publisher + category 조합 중복 방지
-            if (!publisherFeedRepository.existsByPublisherIdAndCategory(publisher.getId(), source.getArticleCategory())) {
+            if (!publisherFeedRepository.existsByPublisherIdAndArticleCategory(publisher.getId(), source.getArticleCategory())) {
                 publisherFeedRepository.save(PublisherFeed.builder()
                         .publisher(publisher)
                         .articleCategory(source.getArticleCategory())
