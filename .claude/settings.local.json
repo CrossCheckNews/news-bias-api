@@ -11,7 +11,9 @@
       "Bash(./gradlew compileJava compileTestJava)",
       "Bash(./gradlew clean:*)",
       "WebFetch(domain:ai.google.dev)",
-      "Bash(curl -s -X POST https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent -H 'Content-Type: application/json' -H 'x-goog-api-key: __CMDSUB_OUTPUT__')"
+      "Bash(curl -s -X POST https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent -H 'Content-Type: application/json' -H 'x-goog-api-key: __CMDSUB_OUTPUT__')",
+      "Bash(grep -v \"^$\")",
+      "Bash(grep -E \"^--$|class|@Component\")"
     ]
   }
 }

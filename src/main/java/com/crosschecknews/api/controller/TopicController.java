@@ -187,16 +187,6 @@ public class TopicController {
         return topicService.getComparisonView(id, groupBy);
     }
 
-    @Operation(summary = "언론사 관점 비교 조회 (별칭)",
-            description = "/articles와 동일한 응답을 반환합니다.")
-    @GetMapping("/{id}/comparison")
-    public TopicComparisonResponse getComparisonViewAlias(
-            @PathVariable Long id,
-            @RequestParam(required = false) String groupBy
-    ) {
-        return topicService.getComparisonView(id, groupBy);
-    }
-
     @Operation(summary = "토픽에 기사 연결", description = "기존 기사를 토픽에 연결합니다.")
     @PostMapping("/{id}/articles")
     @ResponseStatus(HttpStatus.CREATED)
