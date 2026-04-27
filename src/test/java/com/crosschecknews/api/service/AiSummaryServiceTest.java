@@ -13,7 +13,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,7 +44,7 @@ class AiSummaryServiceTest {
     private Topic topic(long id) {
         return Topic.builder()
                 .id(id).title("Topic " + id)
-                .category(Category.WORLD)
+                .articleCategory(ArticleCategory.WORLD)
                 .status(TopicStatus.ACTIVE)
                 .startDate(LocalDate.now())
                 .build();
@@ -64,7 +63,7 @@ class AiSummaryServiceTest {
                 .normalizedUrl("https://example.com/1")
                 .dedupeKey("key-1")
                 .publisher(publisher)
-                .category(Category.WORLD)
+                .category(ArticleCategory.WORLD)
                 .build();
         return TopicArticle.builder()
                 .id(1L).topic(topic).article(article)

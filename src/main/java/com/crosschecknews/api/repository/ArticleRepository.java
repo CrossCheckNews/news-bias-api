@@ -1,7 +1,7 @@
 package com.crosschecknews.api.repository;
 
 import com.crosschecknews.api.domain.Article;
-import com.crosschecknews.api.domain.Category;
+import com.crosschecknews.api.domain.ArticleCategory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,7 +23,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
     // Priority 3 — 최후 fallback (publisher + 제목 + 날짜 해시)
     boolean existsByDedupeKey(String dedupeKey);
 
-    // 클러스터링 후보: 특정 category + 시간 범위 + ACTIVE Topic에 미연결
+    // 클러스터링 후보: 특정 articleCategory + 시간 범위 + ACTIVE Topic에 미연결
     @Query("""
             SELECT a FROM Article a
             JOIN FETCH a.publisher
@@ -38,7 +38,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
             ORDER BY a.fetchedAt DESC
             """)
     List<Article> findClusteringCandidates(
-            @Param("category") Category category,
+            @Param("category") ArticleCategory category,
             @Param("since") LocalDateTime since
     );
 }

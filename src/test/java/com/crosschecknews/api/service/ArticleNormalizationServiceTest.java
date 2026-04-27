@@ -1,6 +1,6 @@
 package com.crosschecknews.api.service;
 
-import com.crosschecknews.api.domain.Category;
+import com.crosschecknews.api.domain.ArticleCategory;
 import com.crosschecknews.api.domain.Country;
 import com.crosschecknews.api.domain.PoliticalLeaning;
 import com.crosschecknews.api.domain.Publisher;
@@ -199,7 +199,7 @@ class ArticleNormalizationServiceTest {
                     .publisherCode("BBC_WORLD")
                     .headline("Breaking News")
                     .url("https://bbc.com/news/article")
-                    .category(Category.WORLD)
+                    .category(ArticleCategory.WORLD)
                     .country(Country.GB)
                     .politicalLeaning(PoliticalLeaning.CONSERVATIVE)
                     .publishedAt(publishedAt)
@@ -234,7 +234,7 @@ class ArticleNormalizationServiceTest {
                     .url("http://bbc.com/news/?utm_source=google")
                     .description("<p>Some &amp; description</p>")
                     .rssGuid("guid-001")
-                    .category(Category.WORLD)
+                    .category(ArticleCategory.WORLD)
                     .country(Country.GB)
                     .politicalLeaning(PoliticalLeaning.CONSERVATIVE)
                     .publishedAt(LocalDateTime.of(2026, 4, 8, 9, 0))
@@ -261,7 +261,7 @@ class ArticleNormalizationServiceTest {
                     .headline("Iran&apos;s ambassador calls Trump&apos;s post &quot;alarming&quot;")
                     .url("https://bbc.com/news/iran")
                     .description("Iran&apos;s UN ambassador is &quot;deeply irresponsible&quot; &amp; &lt;alarming&gt;")
-                    .category(Category.WORLD)
+                    .category(ArticleCategory.WORLD)
                     .country(Country.GB)
                     .politicalLeaning(PoliticalLeaning.CONSERVATIVE)
                     .publishedAt(LocalDateTime.of(2026, 4, 8, 9, 0))
@@ -283,7 +283,7 @@ class ArticleNormalizationServiceTest {
                     .headline("Headline")
                     .url("https://bbc.com/news")
                     .description(null)
-                    .category(Category.WORLD)
+                    .category(ArticleCategory.WORLD)
                     .country(Country.GB)
                     .politicalLeaning(PoliticalLeaning.CONSERVATIVE)
                     .publishedAt(LocalDateTime.of(2026, 4, 8, 9, 0))

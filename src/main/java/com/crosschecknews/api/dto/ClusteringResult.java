@@ -1,6 +1,6 @@
 package com.crosschecknews.api.dto;
 
-import com.crosschecknews.api.domain.Category;
+import com.crosschecknews.api.domain.ArticleCategory;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -11,7 +11,7 @@ import java.util.List;
 @Builder
 public class ClusteringResult {
 
-    private Category category;
+    private ArticleCategory category;
     private int fromHours;
     private int scannedArticleCount;
     private int clustersCreated;

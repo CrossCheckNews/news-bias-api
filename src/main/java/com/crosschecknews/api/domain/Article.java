@@ -48,7 +48,7 @@ public class Article {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Category category;
+    private ArticleCategory category;
 
     // RSS <guid> 또는 Atom <id> — 출처별 식별자 (publisher 내 고유)
     private String rssGuid;

@@ -1,6 +1,6 @@
 package com.crosschecknews.api.controller;
 
-import com.crosschecknews.api.domain.Category;
+import com.crosschecknews.api.domain.ArticleCategory;
 import com.crosschecknews.api.dto.ClusteringResult;
 import com.crosschecknews.api.dto.FetchAndSaveResult;
 import com.crosschecknews.api.dto.PipelineResult;
@@ -43,7 +43,7 @@ class PipelineControllerTest {
                 .build();
 
         ClusteringResult clustering = ClusteringResult.builder()
-                .category(Category.WORLD)
+                .category(ArticleCategory.WORLD)
                 .fromHours(48)
                 .scannedArticleCount(4)
                 .clustersCreated(2)

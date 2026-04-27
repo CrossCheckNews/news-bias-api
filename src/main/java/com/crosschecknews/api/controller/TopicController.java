@@ -91,7 +91,7 @@ public class TopicController {
                                 {
                                   "id": 1,
                                   "title": "Trump announces reciprocal tariffs on all trading partners",
-                                  "category": "WORLD",
+                                  "articleCategory": "WORLD",
                                   "status": "ACTIVE",
                                   "startDate": "2026-04-09",
                                   "createdAt": "2026-04-09T14:00:00",

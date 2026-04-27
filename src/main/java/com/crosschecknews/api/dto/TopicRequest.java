@@ -1,6 +1,6 @@
 package com.crosschecknews.api.dto;
 
-import com.crosschecknews.api.domain.Category;
+import com.crosschecknews.api.domain.ArticleCategory;
 import com.crosschecknews.api.domain.TopicStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -25,7 +25,7 @@ public class TopicRequest {
 
     @NotNull
     @Schema(description = "카테고리 (현재: WORLD)", example = "WORLD")
-    private Category category;
+    private ArticleCategory articleCategory;
 
     @NotNull
     @Schema(description = "토픽 상태 (PENDING / ACTIVE / ARCHIVED)", example = "ACTIVE")

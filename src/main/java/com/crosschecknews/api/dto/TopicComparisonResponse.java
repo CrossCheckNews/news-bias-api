@@ -71,7 +71,7 @@ public class TopicComparisonResponse {
                 .topicId(topic.getId())
                 .topicTitle(topic.getTitle())
                 .briefSummary(topic.getAiSummary())
-                .category(topic.getCategory().name())
+                .category(topic.getArticleCategory().name())
                 .groupBy(groups != null ? groupBy.toLowerCase() : null)
                 .articles(sorted)
                 .groups(groups)

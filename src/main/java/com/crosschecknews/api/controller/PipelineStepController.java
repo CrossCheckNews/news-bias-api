@@ -1,6 +1,6 @@
 package com.crosschecknews.api.controller;
 
-import com.crosschecknews.api.domain.Category;
+import com.crosschecknews.api.domain.ArticleCategory;
 import com.crosschecknews.api.dto.ClusteringRequest;
 import com.crosschecknews.api.dto.ClusteringResult;
 import com.crosschecknews.api.dto.FetchAndSaveResult;
@@ -53,10 +53,10 @@ public class PipelineStepController {
     )
     @PostMapping("/cluster")
     public ClusteringResult cluster(
-            @RequestParam(defaultValue = "WORLD") Category category,
+            @RequestParam(defaultValue = "WORLD") ArticleCategory articleCategory,
             @RequestParam(defaultValue = "48") @Min(1) @Max(168) int fromHours
     ) {
-        return topicClusteringService.cluster(new ClusteringRequest(category, fromHours));
+        return topicClusteringService.cluster(new ClusteringRequest(articleCategory, fromHours));
     }
 
     /**

@@ -1,6 +1,6 @@
 package com.crosschecknews.api.service;
 
-import com.crosschecknews.api.domain.Category;
+import com.crosschecknews.api.domain.ArticleCategory;
 import com.crosschecknews.api.domain.TopicArticle;
 import com.crosschecknews.api.dto.*;
 import com.crosschecknews.api.repository.TopicArticleRepository;
@@ -62,7 +62,7 @@ public class TestPipelineService {
      * 기사마다 TfIdfVectorizer.tokenize() 결과를 포함한다.
      */
     private List<TestPipelineResult.TopicResult> buildTopicResults() {
-        return Arrays.stream(Category.values())
+        return Arrays.stream(ArticleCategory.values())
                 .flatMap(category -> {
                     try {
                         ClusteringResult result = topicClusteringService.cluster(

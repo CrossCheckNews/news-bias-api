@@ -1,7 +1,7 @@
 package com.crosschecknews.api.dto;
 
 import com.crosschecknews.api.domain.Article;
-import com.crosschecknews.api.domain.Category;
+import com.crosschecknews.api.domain.ArticleCategory;
 import com.crosschecknews.api.domain.Country;
 import com.crosschecknews.api.domain.PoliticalLeaning;
 import lombok.Builder;
@@ -24,7 +24,7 @@ public class ArticleResponse {
     private String publisherName;
     private Country publisherCountry;
     private PoliticalLeaning publisherLeaning;
-    private Category category;
+    private ArticleCategory category;
 
     public static ArticleResponse from(Article article) {
         return ArticleResponse.builder()

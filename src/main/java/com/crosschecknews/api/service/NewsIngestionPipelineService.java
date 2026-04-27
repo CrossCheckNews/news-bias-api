@@ -1,6 +1,6 @@
 package com.crosschecknews.api.service;
 
-import com.crosschecknews.api.domain.Category;
+import com.crosschecknews.api.domain.ArticleCategory;
 import com.crosschecknews.api.dto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,13 +28,13 @@ public class NewsIngestionPipelineService {
         int fromHours = (request != null) ? request.getFromHours() : 48;
         log.info("파이프라인 시작 fromHours={}", fromHours);
 
-        // ── Stage 1~3: RSS 수집 + 정규화 + 저장 ─────────────────────────────
+        // Stage 1~3: RSS 수집 + 정규화 + 저장
         FetchAndSaveResult fetchAndSave = runFetchAndSave();
 
-        // ── Stage 4: 카테고리별 클러스터링 ───────────────────────────────────
+        // Stage 4: 카테고리별 클러스터링
         List<ClusteringResult> clustering = runClustering(fromHours);
 
-        // ── Stage 5: AI 요약 ─────────────────────────────────────────────────
+        // Stage 5: AI 요약
         List<SummarizeResponse> summaries = runSummarize();
 
         PipelineResult result = PipelineResult.builder()
@@ -51,8 +51,6 @@ public class NewsIngestionPipelineService {
 
         return result;
     }
-
-    // ── 내부 단계 ────────────────────────────────────────────────────────────
 
     private FetchAndSaveResult runFetchAndSave() {
         try {
@@ -72,15 +70,15 @@ public class NewsIngestionPipelineService {
     private List<ClusteringResult> runClustering(int fromHours) {
         List<ClusteringResult> results = new ArrayList<>();
 
-        for (Category category : Category.values()) {
+        for (ArticleCategory articleCategory : ArticleCategory.values()) {
             try {
-                ClusteringRequest req = new ClusteringRequest(category, fromHours);
+                ClusteringRequest req = new ClusteringRequest(articleCategory, fromHours);
                 ClusteringResult result = topicClusteringService.cluster(req);
                 results.add(result);
                 log.info("[Stage 4] 클러스터링 완료 category={} clusters={} linked={}",
-                        category, result.getClustersCreated(), result.getLinkedArticleCount());
+                        articleCategory, result.getClustersCreated(), result.getLinkedArticleCount());
             } catch (Exception e) {
-                log.error("[Stage 4] 클러스터링 실패 category={} cause={}", category, e.getMessage(), e);
+                log.error("[Stage 4] 클러스터링 실패 category={} cause={}", articleCategory, e.getMessage(), e);
             }
         }
         return results;

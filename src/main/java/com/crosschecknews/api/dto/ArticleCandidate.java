@@ -1,6 +1,6 @@
 package com.crosschecknews.api.dto;
 
-import com.crosschecknews.api.domain.Category;
+import com.crosschecknews.api.domain.ArticleCategory;
 import com.crosschecknews.api.domain.Country;
 import com.crosschecknews.api.domain.FeedSource;
 import com.crosschecknews.api.domain.PoliticalLeaning;
@@ -18,7 +18,7 @@ public class ArticleCandidate {
     private String publisherName;       // e.g. "Fox News"
     private Country country;
     private PoliticalLeaning politicalLeaning;
-    private Category category;
+    private ArticleCategory category;
     private String headline;
     private String url;
     private String description;
@@ -31,7 +31,7 @@ public class ArticleCandidate {
                 .publisherName(source.getPublisherName())
                 .country(source.getCountry())
                 .politicalLeaning(source.getPoliticalLeaning())
-                .category(source.getCategory())
+                .category(source.getArticleCategory())
                 .headline(entry.title())
                 .url(entry.link())
                 .description(entry.description())

@@ -35,7 +35,7 @@ public class TopicService {
         Topic topic = Topic.builder()
                 .title(request.getTitle())
                 .summary(request.getSummary())
-                .category(request.getCategory())
+                .articleCategory(request.getArticleCategory())
                 .status(request.getStatus())
                 .startDate(request.getStartDate())
                 .build();
