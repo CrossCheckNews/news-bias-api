@@ -219,11 +219,11 @@ public class TopicClusteringService {
 
     // ── Topic 생성 ─────────────────────────────────────────────────────────────
 
-    private Topic createTopic(List<Article> cluster, Category category, Map<Long, double[]> embeddings) {
+    private Topic createTopic(List<Article> cluster, ArticleCategory articleCategory, Map<Long, double[]> embeddings) {
         String title = pickRepresentativeTitle(cluster, embeddings);
         return Topic.builder()
                 .title(title)
-                .category(category)
+                .articleCategory(articleCategory)
                 .status(TopicStatus.ACTIVE)
                 .startDate(cluster.stream()
                         .map(a -> a.getPublishedAt() != null

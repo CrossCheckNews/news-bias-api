@@ -37,7 +37,7 @@ public class Topic {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Category category;
+    private ArticleCategory articleCategory;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

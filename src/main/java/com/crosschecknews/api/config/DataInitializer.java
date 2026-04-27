@@ -37,13 +37,13 @@ public class DataInitializer implements ApplicationRunner {
                     });
 
             // PublisherFeed — 동일 publisher + category 조합 중복 방지
-            if (!publisherFeedRepository.existsByPublisherIdAndCategory(publisher.getId(), source.getCategory())) {
+            if (!publisherFeedRepository.existsByPublisherIdAndCategory(publisher.getId(), source.getArticleCategory())) {
                 publisherFeedRepository.save(PublisherFeed.builder()
                         .publisher(publisher)
-                        .category(source.getCategory())
+                        .articleCategory(source.getArticleCategory())
                         .rssUrl(source.getRssUrl())
                         .build());
-                log.info("Seeded feed: {} / {}", source.getPublisherName(), source.getCategory());
+                log.info("Seeded feed: {} / {}", source.getPublisherName(), source.getArticleCategory());
             }
         }
     }

@@ -1,6 +1,6 @@
 package com.crosschecknews.api.dto;
 
-import com.crosschecknews.api.domain.Category;
+import com.crosschecknews.api.domain.ArticleCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -16,7 +16,7 @@ public class ClusteringRequest {
 
     @NotNull
     @Schema(description = "클러스터링 대상 카테고리 (현재: WORLD)", example = "WORLD")
-    private Category category;
+    private ArticleCategory category;
 
     @Min(1) @Max(168)
     @Schema(description = "수집 기준 시간 범위 (1~168시간, 기본값 48)", example = "48")

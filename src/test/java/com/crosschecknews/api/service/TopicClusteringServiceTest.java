@@ -67,7 +67,7 @@ class TopicClusteringServiceTest {
                 .normalizedUrl("https://example.com/" + id)
                 .dedupeKey("key-" + id)
                 .publisher(publisher)
-                .category(Category.WORLD)
+                .category(ArticleCategory.WORLD)
                 .publishedAt(LocalDateTime.now().minusHours(1))
                 .build();
     }
@@ -76,13 +76,13 @@ class TopicClusteringServiceTest {
         given(topicRepository.save(any(Topic.class))).willAnswer(inv -> {
             Topic t = inv.getArgument(0);
             return Topic.builder().id(topicId).title(t.getTitle())
-                    .category(t.getCategory()).status(t.getStatus())
+                    .articleCategory(t.getArticleCategory()).status(t.getStatus())
                     .startDate(t.getStartDate()).build();
         });
     }
 
     private ClusteringRequest req(int fromHours) {
-        return new ClusteringRequest(Category.WORLD, fromHours);
+        return new ClusteringRequest(ArticleCategory.WORLD, fromHours);
     }
 
     // ── 후보 기사 부족 ─────────────────────────────────────────────────────────
@@ -187,7 +187,7 @@ class TopicClusteringServiceTest {
             Topic t = inv.getArgument(0);
             long id = t.getTitle().toLowerCase().contains("trump") ? 1L : 2L;
             return Topic.builder().id(id).title(t.getTitle())
-                    .category(t.getCategory()).status(t.getStatus())
+                    .articleCategory(t.getArticleCategory()).status(t.getStatus())
                     .startDate(t.getStartDate()).build();
         });
         given(topicArticleRepository.existsByTopicIdAndArticleId(any(), any()))

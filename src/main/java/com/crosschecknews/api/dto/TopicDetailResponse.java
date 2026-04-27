@@ -1,6 +1,6 @@
 package com.crosschecknews.api.dto;
 
-import com.crosschecknews.api.domain.Category;
+import com.crosschecknews.api.domain.ArticleCategory;
 import com.crosschecknews.api.domain.Topic;
 import com.crosschecknews.api.domain.TopicArticle;
 import com.crosschecknews.api.domain.TopicStatus;
@@ -31,7 +31,7 @@ public class TopicDetailResponse {
     private String title;
 
     @Schema(description = "카테고리", example = "WORLD")
-    private Category category;
+    private ArticleCategory articleCategory;
 
     @Schema(description = "토픽 상태", allowableValues = {"PENDING", "ACTIVE", "ARCHIVED"}, example = "ACTIVE")
     private TopicStatus status;
@@ -150,7 +150,7 @@ public class TopicDetailResponse {
         return TopicDetailResponse.builder()
                 .id(topic.getId())
                 .title(topic.getTitle())
-                .category(topic.getCategory())
+                .articleCategory(topic.getArticleCategory())
                 .status(topic.getStatus())
                 .startDate(topic.getStartDate())
                 .createdAt(topic.getCreatedAt())

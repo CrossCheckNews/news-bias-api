@@ -24,7 +24,7 @@ public class PublisherFeed {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Category category;
+    private ArticleCategory articleCategory;
 
     @Column(nullable = false)
     private String rssUrl;

@@ -51,7 +51,7 @@ class TopicServiceTest {
         Topic.TopicBuilder builder = Topic.builder()
                 .id(1L)
                 .title("Trump tariff policy sparks global trade dispute")
-                .category(Category.WORLD)
+                .articleCategory(ArticleCategory.WORLD)
                 .status(TopicStatus.ACTIVE)
                 .startDate(LocalDate.of(2026, 4, 9))
                 .createdAt(CREATED_AT);
@@ -83,7 +83,7 @@ class TopicServiceTest {
                 .description(description)
                 .publishedAt(publishedAt)
                 .publisher(publisher)
-                .category(Category.WORLD)
+                .category(ArticleCategory.WORLD)
                 .dedupeKey("key-" + id)
                 .build();
     }
@@ -106,7 +106,7 @@ class TopicServiceTest {
 
         assertThat(res.getId()).isEqualTo(1L);
         assertThat(res.getTitle()).isEqualTo("Trump tariff policy sparks global trade dispute");
-        assertThat(res.getCategory()).isEqualTo(Category.WORLD);
+        assertThat(res.getArticleCategory()).isEqualTo(ArticleCategory.WORLD);
         assertThat(res.getStatus()).isEqualTo(TopicStatus.ACTIVE);
         assertThat(res.getStartDate()).isEqualTo(LocalDate.of(2026, 4, 9));
         assertThat(res.getCreatedAt()).isEqualTo(CREATED_AT);

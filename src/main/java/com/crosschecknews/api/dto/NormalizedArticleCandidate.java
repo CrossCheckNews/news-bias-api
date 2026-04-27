@@ -1,6 +1,6 @@
 package com.crosschecknews.api.dto;
 
-import com.crosschecknews.api.domain.Category;
+import com.crosschecknews.api.domain.ArticleCategory;
 import com.crosschecknews.api.domain.Publisher;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,5 +24,5 @@ public class NormalizedArticleCandidate {
     private String dedupeKey;           // SHA-256(publisherName|normalizedHeadline|date)
     private LocalDateTime publishedAt;
     private Publisher publisher;
-    private Category category;
+    private ArticleCategory category;
 }
