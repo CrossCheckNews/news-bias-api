@@ -204,7 +204,7 @@ public class NewsIngestionPipelineService {
 
     private FetchAndSaveResult runFetchAndSave(Long runId) {
         try {
-            FetchAndSaveResult result = articleSaveService.fetchAndSave(null, runId);
+            FetchAndSaveResult result = articleSaveService.fetchAndSaveAll(runId);
             log.info("[Stage 1~3] 수집/저장 완료 fetched={} saved={} duplicates={}",
                     result.getFetchedCount(), result.getSavedCount(), result.getDuplicateCount());
             return result;

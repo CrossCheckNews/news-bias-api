@@ -5,6 +5,8 @@ import com.crosschecknews.api.domain.Country;
 import com.crosschecknews.api.domain.FeedSource;
 import com.crosschecknews.api.domain.PoliticalLeaning;
 import com.crosschecknews.api.service.RssFetchService;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -12,6 +14,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Builder
+@JsonDeserialize(builder = ArticleCandidate.ArticleCandidateBuilder.class)
 public class ArticleCandidate {
 
     private String publisherCode;       // e.g. "FOX_WORLD"
@@ -38,5 +41,10 @@ public class ArticleCandidate {
                 .rssGuid(entry.guid())
                 .publishedAt(entry.publishedAt())
                 .build();
+    }
+
+    @JsonPOJOBuilder(withPrefix = "")
+    public static class ArticleCandidateBuilder {
+        // Lombok @Builder generates the actual methods
     }
 }

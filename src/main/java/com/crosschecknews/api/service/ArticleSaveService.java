@@ -30,8 +30,21 @@ public class ArticleSaveService {
     private final ArticleRepository articleRepository;
     private final PipelineEventPublisher eventPublisher;
 
+    public FetchAndSaveResult fetchAndSaveAll() {
+        return fetchAndSaveAll(null);
+    }
+
+    public FetchAndSaveResult fetchAndSaveAll(Long pipelineRunId) {
+        return fetchAndSave(null, pipelineRunId);
+    }
+
     public FetchAndSaveResult fetchAndSave(RssCollectRequest request) {
         return fetchAndSave(request, null);
+    }
+
+    @Transactional
+    public FetchAndSaveResult fetchAndSaveFromResults(List<FeedCollectResult> feedResults) {
+        return processFeeds(feedResults, null);
     }
 
     @Transactional
@@ -43,6 +56,10 @@ public class ArticleSaveService {
                 ? rssCollectService.collectAll()
                 : rssCollectService.collectByCodes(request.getFeedSourceCodes());
 
+        return processFeeds(feedResults, pipelineRunId);
+    }
+
+    private FetchAndSaveResult processFeeds(List<FeedCollectResult> feedResults, Long pipelineRunId) {
         int totalFetched = 0, totalSaved = 0, totalDuplicate = 0, totalFailed = 0;
         Map<DuplicateReason, Integer> reasonCounts = new EnumMap<>(DuplicateReason.class);
         List<FetchAndSaveResult.FeedSummary> summaries = new ArrayList<>();
