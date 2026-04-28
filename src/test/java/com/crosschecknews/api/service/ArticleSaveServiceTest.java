@@ -91,7 +91,7 @@ class ArticleSaveServiceTest {
         given(deduplicationService.check(any())).willReturn(DuplicateCheckResult.notDuplicate());
         given(articleRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
-        FetchAndSaveResult result = articleSaveService.fetchAndSave(null);
+        FetchAndSaveResult result = articleSaveService.fetchAndSaveAll();
 
         assertThat(result.getFetchedCount()).isEqualTo(2);
         assertThat(result.getSavedCount()).isEqualTo(2);
@@ -122,7 +122,7 @@ class ArticleSaveServiceTest {
                 .willReturn(DuplicateCheckResult.notDuplicate());
         given(articleRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
-        FetchAndSaveResult result = articleSaveService.fetchAndSave(null);
+        FetchAndSaveResult result = articleSaveService.fetchAndSaveAll();
 
         assertThat(result.getFetchedCount()).isEqualTo(2);
         assertThat(result.getSavedCount()).isEqualTo(1);
@@ -145,7 +145,7 @@ class ArticleSaveServiceTest {
         given(deduplicationService.check(any()))
                 .willReturn(DuplicateCheckResult.duplicate(ArticleDeduplicationService.DuplicateReason.NORMALIZED_URL));
 
-        FetchAndSaveResult result = articleSaveService.fetchAndSave(null);
+        FetchAndSaveResult result = articleSaveService.fetchAndSaveAll();
 
         assertThat(result.getSavedCount()).isEqualTo(0);
         assertThat(result.getDuplicateCount()).isEqualTo(1);
@@ -176,7 +176,7 @@ class ArticleSaveServiceTest {
         given(deduplicationService.check(any())).willReturn(DuplicateCheckResult.notDuplicate());
         given(articleRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
-        FetchAndSaveResult result = articleSaveService.fetchAndSave(null);
+        FetchAndSaveResult result = articleSaveService.fetchAndSaveAll();
 
         // NYT 피드의 기사는 저장됨
         assertThat(result.getSavedCount()).isEqualTo(1);
@@ -205,7 +205,7 @@ class ArticleSaveServiceTest {
         given(deduplicationService.check(any())).willReturn(DuplicateCheckResult.notDuplicate());
         given(articleRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
-        FetchAndSaveResult result = articleSaveService.fetchAndSave(null);
+        FetchAndSaveResult result = articleSaveService.fetchAndSaveAll();
 
         assertThat(result.getFetchedCount()).isEqualTo(2);
         assertThat(result.getSavedCount()).isEqualTo(1);
@@ -228,7 +228,7 @@ class ArticleSaveServiceTest {
         given(deduplicationService.check(any())).willReturn(DuplicateCheckResult.notDuplicate());
         given(articleRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
-        articleSaveService.fetchAndSave(null, 1L);
+        articleSaveService.fetchAndSaveAll(1L);
 
         verify(eventPublisher).publish(eq(1L), eq(PipelineStep.RSS_COLLECT),
                 eq(PipelineStatus.RUNNING), anyString(), eq(10));
@@ -248,7 +248,7 @@ class ArticleSaveServiceTest {
         given(deduplicationService.check(any())).willReturn(DuplicateCheckResult.notDuplicate());
         given(articleRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
-        articleSaveService.fetchAndSave(null, 1L);
+        articleSaveService.fetchAndSaveAll(1L);
 
         verify(eventPublisher).publish(eq(1L), eq(PipelineStep.RSS_COLLECT),
                 eq(PipelineStatus.SUCCESS), anyString(), eq(10), eq("Fox News"), isNull());
@@ -264,7 +264,7 @@ class ArticleSaveServiceTest {
 
         given(rssCollectService.collectAll()).willReturn(List.of(failedFeed));
 
-        articleSaveService.fetchAndSave(null, 1L);
+        articleSaveService.fetchAndSaveAll(1L);
 
         verify(eventPublisher).publish(eq(1L), eq(PipelineStep.RSS_COLLECT),
                 eq(PipelineStatus.FAILED), anyString(), eq(10),
@@ -285,7 +285,7 @@ class ArticleSaveServiceTest {
         given(deduplicationService.check(any())).willReturn(DuplicateCheckResult.notDuplicate());
         given(articleRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
-        articleSaveService.fetchAndSave(null, 1L);
+        articleSaveService.fetchAndSaveAll(1L);
 
         verify(eventPublisher).publish(eq(1L), eq(PipelineStep.ARTICLE_SAVE),
                 eq(PipelineStatus.SUCCESS), anyString(), eq(45));
@@ -301,7 +301,7 @@ class ArticleSaveServiceTest {
 
         given(rssCollectService.collectAll()).willReturn(List.of(failedFeed));
 
-        articleSaveService.fetchAndSave(null, 1L);
+        articleSaveService.fetchAndSaveAll(1L);
 
         verify(eventPublisher).publish(eq(1L), eq(PipelineStep.ARTICLE_SAVE),
                 eq(PipelineStatus.FAILED), anyString(), eq(45));
@@ -322,7 +322,7 @@ class ArticleSaveServiceTest {
         given(articleRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
         // 1-arg 오버로드 호출 (pipelineRunId = null)
-        FetchAndSaveResult result = articleSaveService.fetchAndSave(null);
+        FetchAndSaveResult result = articleSaveService.fetchAndSaveAll();
 
         assertThat(result.getSavedCount()).isEqualTo(1);
         verify(eventPublisher).publish(isNull(), eq(PipelineStep.RSS_COLLECT),

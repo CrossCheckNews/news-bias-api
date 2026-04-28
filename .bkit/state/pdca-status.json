@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-28T09:13:48.795Z",
+  "lastUpdated": "2026-04-28T15:17:03.708Z",
   "activeFeatures": [
     "domain",
     "repository",
@@ -51,9 +51,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:30:32.925Z",
-        "lastUpdated": "2026-04-27T13:30:13.536Z"
+        "lastUpdated": "2026-04-28T14:50:42.592Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/dto/PipelineResult.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/dto/ArticleCandidate.java"
     },
     "exception": {
       "phase": "do",
@@ -77,9 +77,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:31:56.447Z",
-        "lastUpdated": "2026-04-27T13:39:37.578Z"
+        "lastUpdated": "2026-04-28T15:17:03.707Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/service/PipelineEventPublisherTest.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/service/TestPipelineServiceDemoLoadTest.java"
     },
     "controller": {
       "phase": "do",
@@ -90,9 +90,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:36:43.382Z",
-        "lastUpdated": "2026-04-27T13:14:45.425Z"
+        "lastUpdated": "2026-04-28T15:12:46.707Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/controller/DashboardController.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/controller/TestPipelineControllerTest.java"
     },
     "config": {
       "phase": "do",
@@ -168,7 +168,7 @@
   "session": {
     "startedAt": "2026-04-04T08:15:47.494Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-28T09:13:48.795Z"
+    "lastActivity": "2026-04-28T15:17:03.708Z"
   },
   "history": [
     {
@@ -2352,6 +2352,114 @@
     {
       "timestamp": "2026-04-28T09:13:48.795Z",
       "feature": "integration",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T14:23:36.943Z",
+      "feature": "dto",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T14:24:07.910Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T14:24:43.400Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T14:25:18.209Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T14:25:27.801Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T14:46:41.929Z",
+      "feature": "dto",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T14:48:14.526Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T14:49:08.229Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T14:49:30.023Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T14:49:48.426Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T14:50:18.771Z",
+      "feature": "dto",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T14:50:42.593Z",
+      "feature": "dto",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T14:51:05.606Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T14:51:16.574Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T14:51:24.644Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T14:52:21.461Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T15:12:46.708Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-28T15:17:03.708Z",
+      "feature": "service",
       "phase": "do",
       "action": "updated"
     }

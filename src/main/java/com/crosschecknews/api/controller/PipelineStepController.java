@@ -39,7 +39,7 @@ public class PipelineStepController {
     )
     @PostMapping("/fetch-save")
     public FetchAndSaveResult fetchAndSave() {
-        return articleSaveService.fetchAndSave(null);
+        return articleSaveService.fetchAndSaveAll();
     }
 
     /**

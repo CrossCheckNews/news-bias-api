@@ -1,5 +1,6 @@
 package com.crosschecknews.api.controller;
 
+import com.crosschecknews.api.dto.RssToJsonResult;
 import com.crosschecknews.api.dto.TestPipelineResult;
 import com.crosschecknews.api.service.TestPipelineService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,4 +40,34 @@ public class TestPipelineController {
     public TestPipelineResult summarize() {
         return testPipelineService.run();
     }
+
+    @Operation(
+            summary = "[Test] demo-data JSON → Article/Topic/Summary DB 로드",
+            description = """
+                    demo-data/ 디렉토리의 모든 JSON 파일(ArticleCandidate 구조)을 읽어
+                    Article 저장 → TF-IDF 클러스터링 → AI 요약 전체 파이프라인을 실행합니다.
+                    네트워크 없이 저장된 데이터만으로 H2를 시딩할 때 사용합니다.
+                    """
+    )
+    @PostMapping("/demo-load")
+    public TestPipelineResult loadFromDemoData() {
+        return testPipelineService.loadFromDemoData();
+    }
+
+    @Operation(
+            summary = "[Test] RSS 실시간 수집 → 날짜별 JSON 파일 저장",
+            description = """
+                    모든 FeedSource(FOX_WORLD, NYT_WORLD, CHOSUN_WORLD, HANI_WORLD)에서 RSS를 실시간으로 수집하고
+                    {demo.data.path}/{yyyy-MM-dd}.json 경로에 저장합니다.
+
+                    저장된 JSON은 ArticleCandidate 구조로, 이후 H2 DB 시드 데이터로 활용합니다.
+
+                    주의: rss.use-fixture=false 설정 시 실제 네트워크를 통해 수집합니다.
+                    """
+    )
+    @PostMapping("/rss-to-json")
+    public RssToJsonResult rssToJson() {
+        return testPipelineService.rssToJson();
+    }
+
 }

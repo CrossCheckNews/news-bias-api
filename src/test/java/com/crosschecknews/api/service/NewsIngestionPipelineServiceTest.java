@@ -79,7 +79,7 @@ class NewsIngestionPipelineServiceTest {
 
     @Test
     void 파이프라인_시작_시_RUNNING_상태로_PipelineRun이_먼저_저장된다() {
-        given(articleSaveService.fetchAndSave(isNull(), eq(1L))).willReturn(successFetchResult);
+        given(articleSaveService.fetchAndSaveAll(eq(1L))).willReturn(successFetchResult);
         given(topicClusteringService.cluster(any())).willReturn(successClusterResult);
         given(aiSummaryService.summarizeAll()).willReturn(List.of(summarizeResponse));
 
@@ -92,7 +92,7 @@ class NewsIngestionPipelineServiceTest {
 
     @Test
     void 파이프라인_완료_후_PipelineRun이_SUCCESS로_업데이트된다() {
-        given(articleSaveService.fetchAndSave(isNull(), eq(1L))).willReturn(successFetchResult);
+        given(articleSaveService.fetchAndSaveAll(eq(1L))).willReturn(successFetchResult);
         given(topicClusteringService.cluster(any())).willReturn(successClusterResult);
         given(aiSummaryService.summarizeAll()).willReturn(List.of(summarizeResponse));
 
@@ -105,7 +105,7 @@ class NewsIngestionPipelineServiceTest {
 
     @Test
     void 파이프라인_결과에_pipelineRunId가_포함된다() {
-        given(articleSaveService.fetchAndSave(isNull(), eq(1L))).willReturn(successFetchResult);
+        given(articleSaveService.fetchAndSaveAll(eq(1L))).willReturn(successFetchResult);
         given(topicClusteringService.cluster(any())).willReturn(successClusterResult);
         given(aiSummaryService.summarizeAll()).willReturn(List.of(summarizeResponse));
 
@@ -116,20 +116,20 @@ class NewsIngestionPipelineServiceTest {
 
     @Test
     void fetchAndSave_호출_시_runId가_전달된다() {
-        given(articleSaveService.fetchAndSave(isNull(), eq(1L))).willReturn(successFetchResult);
+        given(articleSaveService.fetchAndSaveAll(eq(1L))).willReturn(successFetchResult);
         given(topicClusteringService.cluster(any())).willReturn(successClusterResult);
         given(aiSummaryService.summarizeAll()).willReturn(List.of(summarizeResponse));
 
         pipelineService.run(null);
 
-        verify(articleSaveService).fetchAndSave(isNull(), eq(1L));
+        verify(articleSaveService).fetchAndSaveAll(eq(1L));
     }
 
     // ── SSE 이벤트 발행 순서 ─────────────────────────────────────────────────
 
     @Test
     void TOPIC_CLUSTERING_RUNNING_후_SUCCESS_이벤트가_발행된다() {
-        given(articleSaveService.fetchAndSave(isNull(), eq(1L))).willReturn(successFetchResult);
+        given(articleSaveService.fetchAndSaveAll(eq(1L))).willReturn(successFetchResult);
         given(topicClusteringService.cluster(any())).willReturn(successClusterResult);
         given(aiSummaryService.summarizeAll()).willReturn(List.of(summarizeResponse));
 
@@ -143,7 +143,7 @@ class NewsIngestionPipelineServiceTest {
 
     @Test
     void AI_SUMMARY_RUNNING_후_SUCCESS_이벤트가_발행된다() {
-        given(articleSaveService.fetchAndSave(isNull(), eq(1L))).willReturn(successFetchResult);
+        given(articleSaveService.fetchAndSaveAll(eq(1L))).willReturn(successFetchResult);
         given(topicClusteringService.cluster(any())).willReturn(successClusterResult);
         given(aiSummaryService.summarizeAll()).willReturn(List.of(summarizeResponse));
 
@@ -157,7 +157,7 @@ class NewsIngestionPipelineServiceTest {
 
     @Test
     void COMPLETED_이벤트가_마지막에_발행된다() {
-        given(articleSaveService.fetchAndSave(isNull(), eq(1L))).willReturn(successFetchResult);
+        given(articleSaveService.fetchAndSaveAll(eq(1L))).willReturn(successFetchResult);
         given(topicClusteringService.cluster(any())).willReturn(successClusterResult);
         given(aiSummaryService.summarizeAll()).willReturn(List.of(summarizeResponse));
 
@@ -171,7 +171,7 @@ class NewsIngestionPipelineServiceTest {
 
     @Test
     void 클러스터링_예외_발생_시_TOPIC_CLUSTERING_FAILED_이벤트가_발행된다() {
-        given(articleSaveService.fetchAndSave(isNull(), eq(1L))).willReturn(successFetchResult);
+        given(articleSaveService.fetchAndSaveAll(eq(1L))).willReturn(successFetchResult);
         willThrow(new RuntimeException("clustering error"))
                 .given(topicClusteringService).cluster(any());
         given(aiSummaryService.summarizeAll()).willReturn(List.of());
@@ -184,7 +184,7 @@ class NewsIngestionPipelineServiceTest {
 
     @Test
     void AI_요약_예외_발생_시_AI_SUMMARY_FAILED_이벤트가_발행된다() {
-        given(articleSaveService.fetchAndSave(isNull(), eq(1L))).willReturn(successFetchResult);
+        given(articleSaveService.fetchAndSaveAll(eq(1L))).willReturn(successFetchResult);
         given(topicClusteringService.cluster(any())).willReturn(successClusterResult);
         willThrow(new RuntimeException("ai error")).given(aiSummaryService).summarizeAll();
 
@@ -196,7 +196,7 @@ class NewsIngestionPipelineServiceTest {
 
     @Test
     void 클러스터링_실패_시에도_AI_요약과_COMPLETED_이벤트가_발행된다() {
-        given(articleSaveService.fetchAndSave(isNull(), eq(1L))).willReturn(successFetchResult);
+        given(articleSaveService.fetchAndSaveAll(eq(1L))).willReturn(successFetchResult);
         willThrow(new RuntimeException("clustering error"))
                 .given(topicClusteringService).cluster(any());
         given(aiSummaryService.summarizeAll()).willReturn(List.of(summarizeResponse));
@@ -213,7 +213,7 @@ class NewsIngestionPipelineServiceTest {
 
     @Test
     void 파이프라인_결과에_수집_및_클러스터링_정보가_포함된다() {
-        given(articleSaveService.fetchAndSave(isNull(), eq(1L))).willReturn(successFetchResult);
+        given(articleSaveService.fetchAndSaveAll(eq(1L))).willReturn(successFetchResult);
         given(topicClusteringService.cluster(any())).willReturn(successClusterResult);
         given(aiSummaryService.summarizeAll()).willReturn(List.of(summarizeResponse));
 
@@ -227,7 +227,7 @@ class NewsIngestionPipelineServiceTest {
 
     @Test
     void fromHours_기본값은_48이다() {
-        given(articleSaveService.fetchAndSave(isNull(), eq(1L))).willReturn(successFetchResult);
+        given(articleSaveService.fetchAndSaveAll(eq(1L))).willReturn(successFetchResult);
         given(topicClusteringService.cluster(any())).willReturn(successClusterResult);
         given(aiSummaryService.summarizeAll()).willReturn(List.of(summarizeResponse));
 
