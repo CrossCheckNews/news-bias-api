@@ -10,6 +10,8 @@ import java.util.List;
 @Builder
 public class PipelineResult {
 
+    private Long pipelineRunId;
+
     // ── Stage 1~3: RSS 수집 / 정규화 / 저장 ──────────────────────────────────
     private FetchAndSaveResult fetchAndSave;
 

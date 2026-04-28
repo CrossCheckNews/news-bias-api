@@ -23,6 +23,16 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
     // Priority 3 — 최후 fallback (publisher + 제목 + 날짜 해시)
     boolean existsByDedupeKey(String dedupeKey);
 
+    long countByFetchedAtBetween(LocalDateTime from, LocalDateTime to);
+
+    @Query("""
+            SELECT a.publisher.name, COUNT(a)
+            FROM Article a
+            GROUP BY a.publisher.name
+            ORDER BY COUNT(a) DESC
+            """)
+    List<Object[]> countArticlesByPublisher();
+
     // 클러스터링 후보: 특정 articleCategory + 시간 범위 + ACTIVE Topic에 미연결
     @Query("""
             SELECT a FROM Article a

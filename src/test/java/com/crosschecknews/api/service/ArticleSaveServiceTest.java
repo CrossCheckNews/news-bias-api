@@ -27,10 +27,11 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ArticleSaveServiceTest {
 
-    @Mock RssCollectService       rssCollectService;
-    @Mock ArticleNormalizationService normalizationService;
-    @Mock ArticleDeduplicationService deduplicationService;
-    @Mock ArticleRepository       articleRepository;
+    @Mock RssCollectService            rssCollectService;
+    @Mock ArticleNormalizationService  normalizationService;
+    @Mock ArticleDeduplicationService  deduplicationService;
+    @Mock ArticleRepository            articleRepository;
+    @Mock PipelineEventPublisher       eventPublisher;
 
     @InjectMocks ArticleSaveService articleSaveService;
 
@@ -209,5 +210,122 @@ class ArticleSaveServiceTest {
         assertThat(result.getFetchedCount()).isEqualTo(2);
         assertThat(result.getSavedCount()).isEqualTo(1);
         verify(articleRepository, times(1)).save(any());
+    }
+
+    // ── SSE 이벤트 발행 검증 ─────────────────────────────────────────────────
+
+    @Test
+    void fetchAndSave_시작_시_RSS_COLLECT_RUNNING_이벤트가_발행된다() {
+        Publisher pub = publisher(1L, "Fox News");
+        ArticleCandidate c1 = candidate("Headline A", "https://fox.com/a");
+        FeedCollectResult feedResult = FeedCollectResult.builder()
+                .feedSourceCode("FOX_WORLD").publisherName("Fox News")
+                .success(true).count(1).articles(List.of(c1))
+                .fetchedAt(LocalDateTime.now()).build();
+
+        given(rssCollectService.collectAll()).willReturn(List.of(feedResult));
+        given(normalizationService.normalize(c1)).willReturn(normalized(pub, "Headline A", "https://fox.com/a"));
+        given(deduplicationService.check(any())).willReturn(DuplicateCheckResult.notDuplicate());
+        given(articleRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+
+        articleSaveService.fetchAndSave(null, 1L);
+
+        verify(eventPublisher).publish(eq(1L), eq(PipelineStep.RSS_COLLECT),
+                eq(PipelineStatus.RUNNING), anyString(), eq(10));
+    }
+
+    @Test
+    void 피드_성공_시_RSS_COLLECT_SUCCESS_이벤트가_피드별로_발행된다() {
+        Publisher pub = publisher(1L, "Fox News");
+        ArticleCandidate c1 = candidate("Headline A", "https://fox.com/a");
+        FeedCollectResult feedResult = FeedCollectResult.builder()
+                .feedSourceCode("FOX_WORLD").publisherName("Fox News")
+                .success(true).count(1).articles(List.of(c1))
+                .fetchedAt(LocalDateTime.now()).build();
+
+        given(rssCollectService.collectAll()).willReturn(List.of(feedResult));
+        given(normalizationService.normalize(c1)).willReturn(normalized(pub, "Headline A", "https://fox.com/a"));
+        given(deduplicationService.check(any())).willReturn(DuplicateCheckResult.notDuplicate());
+        given(articleRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+
+        articleSaveService.fetchAndSave(null, 1L);
+
+        verify(eventPublisher).publish(eq(1L), eq(PipelineStep.RSS_COLLECT),
+                eq(PipelineStatus.SUCCESS), anyString(), eq(10), eq("Fox News"), isNull());
+    }
+
+    @Test
+    void 피드_실패_시_RSS_COLLECT_FAILED_이벤트와_errorMessage가_발행된다() {
+        FeedCollectResult failedFeed = FeedCollectResult.builder()
+                .feedSourceCode("FOX_WORLD").publisherName("Fox News")
+                .success(false).count(0).articles(List.of())
+                .errorMessage("Connection timeout")
+                .fetchedAt(LocalDateTime.now()).build();
+
+        given(rssCollectService.collectAll()).willReturn(List.of(failedFeed));
+
+        articleSaveService.fetchAndSave(null, 1L);
+
+        verify(eventPublisher).publish(eq(1L), eq(PipelineStep.RSS_COLLECT),
+                eq(PipelineStatus.FAILED), anyString(), eq(10),
+                eq("Fox News"), eq("Connection timeout"));
+    }
+
+    @Test
+    void 기사_저장_완료_후_ARTICLE_SAVE_SUCCESS_이벤트가_발행된다() {
+        Publisher pub = publisher(1L, "Fox News");
+        ArticleCandidate c1 = candidate("Headline A", "https://fox.com/a");
+        FeedCollectResult feedResult = FeedCollectResult.builder()
+                .feedSourceCode("FOX_WORLD").publisherName("Fox News")
+                .success(true).count(1).articles(List.of(c1))
+                .fetchedAt(LocalDateTime.now()).build();
+
+        given(rssCollectService.collectAll()).willReturn(List.of(feedResult));
+        given(normalizationService.normalize(c1)).willReturn(normalized(pub, "Headline A", "https://fox.com/a"));
+        given(deduplicationService.check(any())).willReturn(DuplicateCheckResult.notDuplicate());
+        given(articleRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+
+        articleSaveService.fetchAndSave(null, 1L);
+
+        verify(eventPublisher).publish(eq(1L), eq(PipelineStep.ARTICLE_SAVE),
+                eq(PipelineStatus.SUCCESS), anyString(), eq(45));
+    }
+
+    @Test
+    void 피드_수집_실패_포함_시_ARTICLE_SAVE_FAILED_이벤트가_발행된다() {
+        FeedCollectResult failedFeed = FeedCollectResult.builder()
+                .feedSourceCode("FOX_WORLD").publisherName("Fox News")
+                .success(false).count(0).articles(List.of())
+                .errorMessage("timeout")
+                .fetchedAt(LocalDateTime.now()).build();
+
+        given(rssCollectService.collectAll()).willReturn(List.of(failedFeed));
+
+        articleSaveService.fetchAndSave(null, 1L);
+
+        verify(eventPublisher).publish(eq(1L), eq(PipelineStep.ARTICLE_SAVE),
+                eq(PipelineStatus.FAILED), anyString(), eq(45));
+    }
+
+    @Test
+    void pipelineRunId가_null이어도_이벤트가_정상_발행된다() {
+        Publisher pub = publisher(1L, "Fox News");
+        ArticleCandidate c1 = candidate("Headline A", "https://fox.com/a");
+        FeedCollectResult feedResult = FeedCollectResult.builder()
+                .feedSourceCode("FOX_WORLD").publisherName("Fox News")
+                .success(true).count(1).articles(List.of(c1))
+                .fetchedAt(LocalDateTime.now()).build();
+
+        given(rssCollectService.collectAll()).willReturn(List.of(feedResult));
+        given(normalizationService.normalize(c1)).willReturn(normalized(pub, "Headline A", "https://fox.com/a"));
+        given(deduplicationService.check(any())).willReturn(DuplicateCheckResult.notDuplicate());
+        given(articleRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+
+        // 1-arg 오버로드 호출 (pipelineRunId = null)
+        FetchAndSaveResult result = articleSaveService.fetchAndSave(null);
+
+        assertThat(result.getSavedCount()).isEqualTo(1);
+        verify(eventPublisher).publish(isNull(), eq(PipelineStep.RSS_COLLECT),
+                eq(PipelineStatus.RUNNING), anyString(), eq(10));
     }
 }

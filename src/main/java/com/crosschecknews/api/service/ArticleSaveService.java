@@ -1,6 +1,8 @@
 package com.crosschecknews.api.service;
 
 import com.crosschecknews.api.domain.Article;
+import com.crosschecknews.api.domain.PipelineStatus;
+import com.crosschecknews.api.domain.PipelineStep;
 import com.crosschecknews.api.dto.*;
 import com.crosschecknews.api.repository.ArticleRepository;
 import com.crosschecknews.api.service.ArticleDeduplicationService.DuplicateCheckResult;
@@ -26,9 +28,17 @@ public class ArticleSaveService {
     private final ArticleNormalizationService normalizationService;
     private final ArticleDeduplicationService deduplicationService;
     private final ArticleRepository articleRepository;
+    private final PipelineEventPublisher eventPublisher;
+
+    public FetchAndSaveResult fetchAndSave(RssCollectRequest request) {
+        return fetchAndSave(request, null);
+    }
 
     @Transactional
-    public FetchAndSaveResult fetchAndSave(RssCollectRequest request) {
+    public FetchAndSaveResult fetchAndSave(RssCollectRequest request, Long pipelineRunId) {
+        eventPublisher.publish(pipelineRunId, PipelineStep.RSS_COLLECT, PipelineStatus.RUNNING,
+                "RSS 피드 수집 중...", 10);
+
         List<FeedCollectResult> feedResults = (request == null || request.isCollectAll())
                 ? rssCollectService.collectAll()
                 : rssCollectService.collectByCodes(request.getFeedSourceCodes());
@@ -41,8 +51,15 @@ public class ArticleSaveService {
             if (!feedResult.isSuccess()) {
                 summaries.add(failedFeedSummary(feedResult));
                 totalFailed++;
+                eventPublisher.publish(pipelineRunId, PipelineStep.RSS_COLLECT, PipelineStatus.FAILED,
+                        feedResult.getPublisherName() + " RSS 수집 실패", 10,
+                        feedResult.getPublisherName(), feedResult.getErrorMessage());
                 continue;
             }
+
+            eventPublisher.publish(pipelineRunId, PipelineStep.RSS_COLLECT, PipelineStatus.SUCCESS,
+                    feedResult.getPublisherName() + " RSS 수집 완료", 10,
+                    feedResult.getPublisherName(), null);
 
             int saved = 0, duplicates = 0, failed = 0;
 
@@ -87,7 +104,7 @@ public class ArticleSaveService {
                     .build());
         }
 
-        return FetchAndSaveResult.builder()
+        FetchAndSaveResult result = FetchAndSaveResult.builder()
                 .fetchedCount(totalFetched)
                 .savedCount(totalSaved)
                 .duplicateCount(totalDuplicate)
@@ -96,6 +113,14 @@ public class ArticleSaveService {
                 .feeds(summaries)
                 .executedAt(LocalDateTime.now())
                 .build();
+
+        boolean saveFailed = totalFailed > 0;
+        eventPublisher.publish(pipelineRunId, PipelineStep.ARTICLE_SAVE,
+                saveFailed ? PipelineStatus.FAILED : PipelineStatus.SUCCESS,
+                String.format("기사 저장 완료 (저장 %d건, 중복 %d건, 실패 %d건)", totalSaved, totalDuplicate, totalFailed),
+                45);
+
+        return result;
     }
 
     private Article toEntity(NormalizedArticleCandidate n) {

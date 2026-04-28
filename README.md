@@ -115,6 +115,25 @@ com.crosschecknews.api
 |--------|------|------|
 | POST | `/api/v1/pipeline/collect` | 전체 파이프라인 실행 (수집→저장→클러스터링→AI요약) |
 
+### Dashboard (파이프라인 모니터링)
+| Method | Path | 설명 |
+|--------|------|------|
+| GET | `/api/dashboard/summary` | 전체 기사 수, 토픽 수, 오늘 수집 기사 수, 실패 작업 수, 마지막 수집 시간, 최근 실행 이력 |
+| GET | `/api/dashboard/charts` | 언론사별 기사 수, 국가별 토픽 수, 파이프라인 성공/실패 건수 |
+| GET | `/api/pipeline/stream` | RSS 수집 → 기사 저장 → 토픽 클러스터링 → AI 요약 → 완료 상태를 SSE로 스트리밍 |
+
+대시보드 관측 데이터는 뉴스 도메인 테이블과 분리합니다.
+
+```text
+pipeline_run
+- 파이프라인 실행 1건의 최종 상태, 집계 수치, 시작/종료 시간
+
+pipeline_step_history
+- 실행별 단계 이력
+- step, status, targetName, processedCount, errorType, errorMessage 저장
+- 예: RSS_COLLECT / FAILED / Fox News / RSS_TIMEOUT
+```
+
 ### Topic (핵심 기능)
 | Method | Path | 설명 |
 |--------|------|------|
@@ -189,6 +208,21 @@ export JWT_SECRET=your-secret-at-least-32-chars
 
 # 테스트
 ./gradlew test
+```
+
+### 데모 대시보드 실행
+
+H2 인메모리 DB를 유지하면서 `demo` profile을 켜면 대시보드용 샘플 기사, 토픽, 파이프라인 이력이 자동 생성됩니다.
+
+```bash
+./gradlew bootRun --args='--spring.profiles.active=demo'
+```
+
+데모 관리자 계정:
+
+```text
+username: admin
+password: admin1234
 ```
 
 H2 Console: `http://localhost:8080/h2-console`  
