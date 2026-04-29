@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-04-28T15:17:03.708Z",
+  "lastUpdated": "2026-04-29T08:06:29.564Z",
   "activeFeatures": [
     "domain",
     "repository",
@@ -38,9 +38,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:27:01.636Z",
-        "lastUpdated": "2026-04-22T03:45:31.738Z"
+        "lastUpdated": "2026-04-29T08:05:40.782Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/repository/ArticleRepository.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/repository/DashboardRepositoryTest.java"
     },
     "dto": {
       "phase": "do",
@@ -77,9 +77,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:31:56.447Z",
-        "lastUpdated": "2026-04-28T15:17:03.707Z"
+        "lastUpdated": "2026-04-29T08:04:40.205Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/service/TestPipelineServiceDemoLoadTest.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/service/DashboardServiceTest.java"
     },
     "controller": {
       "phase": "do",
@@ -90,9 +90,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:36:43.382Z",
-        "lastUpdated": "2026-04-28T15:12:46.707Z"
+        "lastUpdated": "2026-04-29T08:03:42.936Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/controller/TestPipelineControllerTest.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/controller/DashboardControllerTest.java"
     },
     "config": {
       "phase": "do",
@@ -103,9 +103,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-05T08:02:17.428Z",
-        "lastUpdated": "2026-04-05T10:39:15.711Z"
+        "lastUpdated": "2026-04-29T08:06:29.562Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/config/DataInitializer.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/config/DashboardDemoDataInitializerTest.java"
     },
     "client": {
       "phase": "do",
@@ -168,7 +168,7 @@
   "session": {
     "startedAt": "2026-04-04T08:15:47.494Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-28T15:17:03.708Z"
+    "lastActivity": "2026-04-29T08:06:29.564Z"
   },
   "history": [
     {
@@ -2460,6 +2460,30 @@
     {
       "timestamp": "2026-04-28T15:17:03.708Z",
       "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-29T08:03:42.937Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-29T08:04:40.206Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-29T08:05:40.785Z",
+      "feature": "repository",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-04-29T08:06:29.564Z",
+      "feature": "config",
       "phase": "do",
       "action": "updated"
     }
