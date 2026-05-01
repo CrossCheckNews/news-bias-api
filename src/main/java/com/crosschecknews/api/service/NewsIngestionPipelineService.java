@@ -121,6 +121,7 @@ public class NewsIngestionPipelineService {
         saveFetchAndSaveSteps(run, fetchAndSave, startedAt);
         saveClusteringSteps(run, clustering);
         saveSummaryStep(run, summaries, finishedAt);
+        saveCompletedStep(run, finishedAt);
     }
 
     private void saveFetchAndSaveSteps(PipelineRun run, FetchAndSaveResult result, LocalDateTime pipelineStartedAt) {
@@ -199,6 +200,20 @@ public class NewsIngestionPipelineService {
                 .targetName("ACTIVE_TOPICS")
                 .processedCount(summaries.size())
                 .message("AI 요약 생성 완료")
+                .startedAt(finishedAt)
+                .finishedAt(finishedAt)
+                .build());
+    }
+
+    private void saveCompletedStep(PipelineRun run, LocalDateTime finishedAt) {
+        pipelineStepHistoryRepository.save(PipelineStepHistory.builder()
+                .pipelineRun(run)
+                .step(COMPLETED)
+                .status(PipelineStatus.SUCCESS)
+                .targetType("PIPELINE")
+                .targetName("FULL_PIPELINE")
+                .processedCount(0)
+                .message("파이프라인 실행 완료")
                 .startedAt(finishedAt)
                 .finishedAt(finishedAt)
                 .build());

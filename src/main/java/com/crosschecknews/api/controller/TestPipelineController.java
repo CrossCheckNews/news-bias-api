@@ -44,8 +44,8 @@ public class TestPipelineController {
     @Operation(
             summary = "[Test] demo-data JSON → Article/Topic/Summary DB 로드",
             description = """
-                    demo-data/ 디렉토리의 모든 JSON 파일(ArticleCandidate 구조)을 읽어
-                    Article 저장 → TF-IDF 클러스터링 → AI 요약 전체 파이프라인을 실행합니다.
+                    demo-data/ 디렉토리의 날짜별 JSON 파일(ArticleCandidate 구조)을 읽어
+                    각 날짜 파일마다 Article 저장 → TF-IDF 클러스터링 → AI 요약 전체 파이프라인을 실행합니다.
                     네트워크 없이 저장된 데이터만으로 H2를 시딩할 때 사용합니다.
                     """
     )
