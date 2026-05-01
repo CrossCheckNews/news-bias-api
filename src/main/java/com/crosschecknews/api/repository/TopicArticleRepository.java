@@ -18,6 +18,4 @@ public interface TopicArticleRepository extends JpaRepository<TopicArticle, Long
 
     boolean existsByTopicIdAndArticleId(Long topicId, Long articleId);
 
-    void deleteByTopicIdAndArticleId(Long topicId, Long articleId);
-
 }

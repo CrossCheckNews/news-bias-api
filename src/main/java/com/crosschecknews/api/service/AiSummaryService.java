@@ -5,7 +5,6 @@ import com.crosschecknews.api.domain.Topic;
 import com.crosschecknews.api.domain.TopicArticle;
 import com.crosschecknews.api.domain.TopicStatus;
 import com.crosschecknews.api.dto.SummarizeResponse;
-import com.crosschecknews.api.exception.ResourceNotFoundException;
 import com.crosschecknews.api.repository.TopicArticleRepository;
 import com.crosschecknews.api.repository.TopicRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,16 +25,6 @@ public class AiSummaryService {
     private final TopicArticleRepository topicArticleRepository;
     private final FallbackAiClient geminiClient;
     private final PromptBuilder promptBuilder;
-
-    /**
-     * 특정 Topic 1건 요약 생성 및 저장.
-     */
-    public SummarizeResponse summarize(Long topicId) {
-        Topic topic = topicRepository.findById(topicId)
-                .orElseThrow(() -> new ResourceNotFoundException("Topic not found: " + topicId));
-
-        return doSummarize(topic);
-    }
 
     /**
      * aiSummary가 없는 ACTIVE Topic 일괄 요약.

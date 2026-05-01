@@ -1,12 +1,10 @@
 package com.crosschecknews.api.service;
 
-import com.crosschecknews.api.domain.Article;
 import com.crosschecknews.api.domain.Topic;
 import com.crosschecknews.api.domain.TopicArticle;
 import com.crosschecknews.api.domain.TopicStatus;
 import com.crosschecknews.api.dto.*;
 import com.crosschecknews.api.exception.ResourceNotFoundException;
-import com.crosschecknews.api.repository.ArticleRepository;
 import com.crosschecknews.api.repository.TopicArticleRepository;
 import com.crosschecknews.api.repository.TopicRepository;
 import com.crosschecknews.api.util.PageUtil;
@@ -29,7 +27,6 @@ public class TopicService {
 
     private final TopicRepository topicRepository;
     private final TopicArticleRepository topicArticleRepository;
-    private final ArticleRepository articleRepository;
 
     public Page<TopicResponse> findAll(TopicStatus status, LocalDate date, int page, int size) {
         var pageable = PageUtil.of(page, size, Sort.Order.desc("createdAt"));
@@ -62,37 +59,6 @@ public class TopicService {
         Topic topic = getTopic(topicId);
         List<TopicArticle> links = topicArticleRepository.findByTopicIdWithDetails(topicId);
         return TopicDetailResponse.from(topic, links);
-    }
-
-    @Transactional
-    public void linkArticle(Long topicId, Long articleId) {
-        Topic topic = getTopic(topicId);
-        Article article = articleRepository.findById(articleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Article not found: " + articleId));
-
-        // 중복 연결은 DB unique constraint + GlobalExceptionHandler(409)가 처리
-        TopicArticle link = TopicArticle.builder()
-                .topic(topic)
-                .article(article)
-                .build();
-        topicArticleRepository.save(link);
-    }
-
-    @Transactional
-    public void unlinkArticle(Long topicId, Long articleId) {
-        getTopic(topicId);
-        if (!topicArticleRepository.existsByTopicIdAndArticleId(topicId, articleId)) {
-            throw new ResourceNotFoundException(
-                    "Link not found: topicId=" + topicId + ", articleId=" + articleId);
-        }
-        topicArticleRepository.deleteByTopicIdAndArticleId(topicId, articleId);
-    }
-
-    // 비교 뷰: groupBy=leaning(default) or country (null = flat)
-    public TopicComparisonResponse getComparisonView(Long topicId, String groupBy) {
-        Topic topic = getTopic(topicId);
-        List<TopicArticle> links = topicArticleRepository.findByTopicIdWithDetails(topicId);
-        return TopicComparisonResponse.of(topic, links, groupBy);
     }
 
     Topic getTopic(Long topicId) {
