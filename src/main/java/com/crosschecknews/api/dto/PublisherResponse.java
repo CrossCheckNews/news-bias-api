@@ -16,6 +16,7 @@ public class PublisherResponse {
     private String name;
     private Country country;
     private PoliticalLeaning politicalLeaning;
+    private String rssUrl;
     private LocalDateTime createdAt;
 
     public static PublisherResponse from(Publisher publisher) {
@@ -24,6 +25,7 @@ public class PublisherResponse {
                 .name(publisher.getName())
                 .country(publisher.getCountry())
                 .politicalLeaning(publisher.getPoliticalLeaning())
+                .rssUrl(publisher.getRssUrl())
                 .createdAt(publisher.getCreatedAt())
                 .build();
     }

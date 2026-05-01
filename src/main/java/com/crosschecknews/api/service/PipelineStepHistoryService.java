@@ -1,5 +1,6 @@
 package com.crosschecknews.api.service;
 
+import com.crosschecknews.api.domain.PipelineStatus;
 import com.crosschecknews.api.domain.PipelineStepHistory;
 import com.crosschecknews.api.dto.dashboard.PipelineStepHistoryResponse;
 import com.crosschecknews.api.repository.PipelineStepHistoryRepository;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -19,12 +21,21 @@ public class PipelineStepHistoryService {
 
     private final PipelineStepHistoryRepository pipelineStepHistoryRepository;
 
-    public Page<PipelineStepHistoryResponse> getHistories(LocalDate date, int page, int size) {
+    public Page<PipelineStepHistoryResponse> getHistories(LocalDate date, List<PipelineStatus> statuses, int page, int size) {
         var pageable = PageUtil.of(page, size, Sort.Order.desc("startedAt"), Sort.Order.desc("id"));
-        Page<PipelineStepHistory> histories = (date != null)
-                ? pipelineStepHistoryRepository.findByStartedAtBetween(
-                        date.atStartOfDay(), date.plusDays(1).atStartOfDay(), pageable)
-                : pipelineStepHistoryRepository.findAll(pageable);
+        boolean hasStatuses = statuses != null && !statuses.isEmpty();
+        Page<PipelineStepHistory> histories;
+        if (date != null && hasStatuses) {
+            histories = pipelineStepHistoryRepository.findByStartedAtBetweenAndStatusIn(
+                    date.atStartOfDay(), date.plusDays(1).atStartOfDay(), statuses, pageable);
+        } else if (date != null) {
+            histories = pipelineStepHistoryRepository.findByStartedAtBetween(
+                    date.atStartOfDay(), date.plusDays(1).atStartOfDay(), pageable);
+        } else if (hasStatuses) {
+            histories = pipelineStepHistoryRepository.findByStatusIn(statuses, pageable);
+        } else {
+            histories = pipelineStepHistoryRepository.findAll(pageable);
+        }
         return histories.map(this::toResponse);
     }
 
@@ -37,6 +48,8 @@ public class PipelineStepHistoryService {
                 .targetType(h.getTargetType())
                 .targetName(h.getTargetName())
                 .processedCount(h.getProcessedCount())
+                .successCount(h.getSuccessCount())
+                .failedCount(h.getFailedCount())
                 .errorType(h.getErrorType())
                 .errorMessage(h.getErrorMessage())
                 .message(h.getMessage())

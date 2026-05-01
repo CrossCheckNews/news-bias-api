@@ -49,6 +49,12 @@ public class PipelineStepHistory {
     @Column(nullable = false)
     private int processedCount;
 
+    @Column(nullable = false)
+    private int successCount;
+
+    @Column(nullable = false)
+    private int failedCount;
+
     private String errorType;
 
     private String errorMessage;

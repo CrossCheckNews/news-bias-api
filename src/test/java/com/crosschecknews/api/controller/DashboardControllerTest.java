@@ -15,10 +15,12 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
@@ -36,7 +38,7 @@ class DashboardControllerTest {
 
     @Test
     void 대시보드_요약은_200과_집계_필드를_반환한다() throws Exception {
-        given(dashboardService.getSummary()).willReturn(DashboardSummaryResponse.builder()
+        given(dashboardService.getSummary(isNull())).willReturn(DashboardSummaryResponse.builder()
                 .totalArticles(20)
                 .totalTopics(5)
                 .todayCollectedArticles(8)
@@ -56,8 +58,24 @@ class DashboardControllerTest {
     }
 
     @Test
+    void 대시보드_요약은_date_파라미터를_서비스에_전달한다() throws Exception {
+        given(dashboardService.getSummary(LocalDate.of(2026, 5, 1))).willReturn(DashboardSummaryResponse.builder()
+                .totalArticles(20)
+                .totalTopics(5)
+                .todayCollectedArticles(3)
+                .successJobs(2)
+                .failedJobs(1)
+                .recentRuns(List.of())
+                .build());
+
+        mockMvc.perform(get("/api/dashboard/summary").param("date", "2026-05-01"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.todayCollectedArticles").value(3));
+    }
+
+    @Test
     void 차트_데이터는_200과_배열_필드를_반환한다() throws Exception {
-        given(dashboardService.getCharts()).willReturn(DashboardChartsResponse.builder()
+        given(dashboardService.getCharts(isNull())).willReturn(DashboardChartsResponse.builder()
                 .articlesByPublisher(List.of(
                         DashboardChartsResponse.NamedCount.builder().name("Fox News").count(4).build(),
                         DashboardChartsResponse.NamedCount.builder().name("NYT").count(3).build()
@@ -79,6 +97,21 @@ class DashboardControllerTest {
                 .andExpect(jsonPath("$.articlesByPublisher[0].count").value(4))
                 .andExpect(jsonPath("$.topicsByCountry").isArray())
                 .andExpect(jsonPath("$.pipelineStatusCounts").isArray());
+    }
+
+    @Test
+    void 차트_데이터는_date_파라미터를_서비스에_전달한다() throws Exception {
+        given(dashboardService.getCharts(LocalDate.of(2026, 5, 1))).willReturn(DashboardChartsResponse.builder()
+                .articlesByPublisher(List.of())
+                .topicsByCountry(List.of())
+                .pipelineStatusCounts(List.of(
+                        DashboardChartsResponse.NamedCount.builder().name("SUCCESS").count(2).build()
+                ))
+                .build());
+
+        mockMvc.perform(get("/api/dashboard/charts").param("date", "2026-05-01"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pipelineStatusCounts[0].count").value(2));
     }
 
     @Test

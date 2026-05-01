@@ -15,7 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
+import com.crosschecknews.api.dto.PageResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -55,7 +55,7 @@ public class TopicController {
             }
     )
     @GetMapping
-    public Page<TopicResponse> findAll(
+    public PageResponse<TopicResponse> findAll(
             @Parameter(description = "토픽 상태 필터 (PENDING / ACTIVE / ARCHIVED). 생략 시 전체 조회.")
             @RequestParam(required = false) TopicStatus status,
             @Parameter(description = "생성일 기준 날짜 필터 (yyyy-MM-dd). 예: 2026-04-06. 생략 시 전체 조회.")
@@ -63,7 +63,7 @@ public class TopicController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return topicService.findAll(status, date, page, size);
+        return PageResponse.from(topicService.findAll(status, date, page, size));
     }
 
     @Operation(

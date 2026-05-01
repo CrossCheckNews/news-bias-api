@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.crosschecknews.api.domain.PipelineStatus.FAILED;
+import static com.crosschecknews.api.domain.PipelineStatus.PARTIAL_FAILED;
 import static com.crosschecknews.api.domain.PipelineStatus.RUNNING;
 import static com.crosschecknews.api.domain.PipelineStatus.SUCCESS;
 import static com.crosschecknews.api.domain.PipelineStep.AI_SUMMARY;
@@ -100,10 +101,11 @@ public class NewsIngestionPipelineService {
     private void completeRun(PipelineRun run, FetchAndSaveResult fetchAndSave,
                               List<ClusteringResult> clustering, List<SummarizeResponse> summaries,
                               LocalDateTime finishedAt) {
-        boolean hasFailure = fetchAndSave.getFailedCount() > 0;
+        PipelineStatus status = statusFromCounts(fetchAndSave.getSavedCount(), fetchAndSave.getFailedCount());
+        boolean hasFailure = status != SUCCESS;
         int clustersCreated = clustering.stream().mapToInt(ClusteringResult::getClustersCreated).sum();
         run.complete(
-                hasFailure ? PipelineStatus.FAILED : PipelineStatus.SUCCESS,
+                status,
                 fetchAndSave.getFetchedCount(),
                 fetchAndSave.getSavedCount(),
                 clustersCreated,
@@ -126,15 +128,18 @@ public class NewsIngestionPipelineService {
 
     private void saveFetchAndSaveSteps(PipelineRun run, FetchAndSaveResult result, LocalDateTime pipelineStartedAt) {
         LocalDateTime executedAt = result.getExecutedAt() != null ? result.getExecutedAt() : pipelineStartedAt;
+        int articleSaveFailedCount = articleSaveFailedCount(result);
 
         if (result.getFeeds() == null || result.getFeeds().isEmpty()) {
             pipelineStepHistoryRepository.save(PipelineStepHistory.builder()
                     .pipelineRun(run)
                     .step(PipelineStep.RSS_COLLECT)
-                    .status(result.getFailedCount() > 0 ? PipelineStatus.FAILED : PipelineStatus.SUCCESS)
+                    .status(statusFromCounts(result.getFetchedCount(), result.getFailedCount()))
                     .targetType("PIPELINE")
                     .targetName("ALL_FEEDS")
                     .processedCount(result.getFetchedCount())
+                    .successCount(result.getFetchedCount())
+                    .failedCount(result.getFailedCount())
                     .errorType(result.getFailedCount() > 0 ? "RSS_COLLECT_FAILED" : null)
                     .errorMessage(result.getFailedCount() > 0 ? "RSS 수집/저장 단계가 실패했습니다." : null)
                     .message(result.getFailedCount() > 0 ? "RSS 수집/저장 실패" : "RSS 수집/저장 완료")
@@ -152,7 +157,9 @@ public class NewsIngestionPipelineService {
                         .targetType("PUBLISHER_FEED")
                         .targetName(feed.getPublisherName())
                         .processedCount(feed.getFetched())
-                        .errorType(feed.isCollectSuccess() ? null : "RSS_FEED_ERROR")
+                        .successCount(feed.isCollectSuccess() ? feed.getFetched() : 0)
+                        .failedCount(feed.isCollectSuccess() ? 0 : 1)
+                        .errorType(feed.isCollectSuccess() ? null : feed.getErrorType())
                         .errorMessage(feed.getErrorMessage())
                         .message(feed.isCollectSuccess() ? "RSS 피드 수집 완료" : "RSS 피드 수집 실패")
                         .startedAt(pipelineStartedAt)
@@ -163,16 +170,60 @@ public class NewsIngestionPipelineService {
         pipelineStepHistoryRepository.save(PipelineStepHistory.builder()
                 .pipelineRun(run)
                 .step(PipelineStep.ARTICLE_SAVE)
-                .status(result.getFailedCount() > 0 ? PipelineStatus.FAILED : PipelineStatus.SUCCESS)
+                .status(statusFromCounts(result.getSavedCount(), articleSaveFailedCount))
                 .targetType("ARTICLE")
                 .targetName("NORMALIZED_ARTICLES")
-                .processedCount(result.getSavedCount())
-                .errorType(result.getFailedCount() > 0 ? "ARTICLE_SAVE_PARTIAL_FAILED" : null)
-                .errorMessage(result.getFailedCount() > 0 ? "일부 기사 저장에 실패했습니다." : null)
-                .message("기사 저장 완료")
+                .processedCount(result.getSavedCount() + articleSaveFailedCount)
+                .successCount(result.getSavedCount())
+                .failedCount(articleSaveFailedCount)
+                .errorType(articleSaveFailedCount > 0 ? "ARTICLE_SAVE_PARTIAL_FAILED" : null)
+                .errorMessage(articleSaveFailedCount > 0 ? articleSaveFailedCount + "건의 기사 저장에 실패했습니다." : null)
+                .message(articleSaveFailedCount > 0
+                        ? String.format("기사 저장 부분 실패 (저장 %d건, 실패 %d건)", result.getSavedCount(), articleSaveFailedCount)
+                        : String.format("기사 저장 완료 (저장 %d건)", result.getSavedCount()))
                 .startedAt(executedAt)
                 .finishedAt(executedAt)
                 .build());
+
+        if (result.getValidationErrors() != null && !result.getValidationErrors().isEmpty()) {
+            pipelineStepHistoryRepository.saveAll(result.getValidationErrors().stream()
+                    .map(err -> PipelineStepHistory.builder()
+                            .pipelineRun(run)
+                            .step(PipelineStep.ARTICLE_SAVE)
+                            .status(PipelineStatus.FAILED)
+                            .targetType("ARTICLE")
+                            .targetName(err.getTargetName())
+                            .processedCount(0)
+                            .successCount(0)
+                            .failedCount(1)
+                            .errorType(err.getErrorType())
+                            .errorMessage(err.getErrorMessage())
+                            .message("필수 필드 누락으로 기사 저장 건너뜀")
+                            .startedAt(executedAt)
+                            .finishedAt(executedAt)
+                            .build())
+                    .toList());
+        }
+    }
+
+    private int articleSaveFailedCount(FetchAndSaveResult result) {
+        if (result.getFeeds() == null || result.getFeeds().isEmpty()) {
+            return result.getValidationErrors() == null ? 0 : result.getValidationErrors().size();
+        }
+        return result.getFeeds().stream()
+                .filter(FetchAndSaveResult.FeedSummary::isCollectSuccess)
+                .mapToInt(FetchAndSaveResult.FeedSummary::getFailed)
+                .sum();
+    }
+
+    private PipelineStatus statusFromCounts(int successCount, int failedCount) {
+        if (failedCount > 0 && successCount > 0) {
+            return PARTIAL_FAILED;
+        }
+        if (failedCount > 0) {
+            return FAILED;
+        }
+        return SUCCESS;
     }
 
     private void saveClusteringSteps(PipelineRun run, List<ClusteringResult> clustering) {
@@ -184,6 +235,8 @@ public class NewsIngestionPipelineService {
                         .targetType("ARTICLE_CATEGORY")
                         .targetName(result.getCategory().name())
                         .processedCount(result.getClustersCreated())
+                        .successCount(result.getClustersCreated())
+                        .failedCount(0)
                         .message("토픽 클러스터링 완료")
                         .startedAt(result.getExecutedAt())
                         .finishedAt(result.getExecutedAt())
@@ -199,6 +252,8 @@ public class NewsIngestionPipelineService {
                 .targetType("TOPIC")
                 .targetName("ACTIVE_TOPICS")
                 .processedCount(summaries.size())
+                .successCount(summaries.size())
+                .failedCount(0)
                 .message("AI 요약 생성 완료")
                 .startedAt(finishedAt)
                 .finishedAt(finishedAt)
@@ -213,6 +268,8 @@ public class NewsIngestionPipelineService {
                 .targetType("PIPELINE")
                 .targetName("FULL_PIPELINE")
                 .processedCount(0)
+                .successCount(0)
+                .failedCount(0)
                 .message("파이프라인 실행 완료")
                 .startedAt(finishedAt)
                 .finishedAt(finishedAt)

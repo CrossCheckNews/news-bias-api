@@ -13,6 +13,7 @@ import com.crosschecknews.api.repository.PipelineStepHistoryRepository;
 import com.crosschecknews.api.repository.TopicArticleRepository;
 import com.crosschecknews.api.util.TfIdfVectorizer;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -150,7 +151,7 @@ public class TestPipelineService {
     public TestPipelineResult loadFromDemoData() {
         List<DemoDataBatch> batches = readDemoJsonBatches();
         if (batches.isEmpty()) {
-            batches = List.of(new DemoDataBatch(null, "EMPTY_DEMO_DATA", List.of()));
+            batches = List.of(new DemoDataBatch(null, "EMPTY_DEMO_DATA", List.of(), List.of()));
         }
 
         List<FetchAndSaveResult> fetchAndSaveResults = new ArrayList<>();
@@ -185,14 +186,19 @@ public class TestPipelineService {
                 .startedAt(startedAt)
                 .build());
 
-        log.info("[DemoLoad] batch={} JSON에서 읽은 기사 수: {}", batchName, batch.candidates().size());
+        log.info("[DemoLoad] batch={} JSON에서 읽은 기사 수: {}, feedErrors={}",
+                batchName, batch.candidates().size(), batch.feedErrors().size());
 
         Map<String, List<ArticleCandidate>> bySource = batch.candidates().stream()
                 .collect(Collectors.groupingBy(ArticleCandidate::getPublisherCode));
 
         List<FeedCollectResult> feedResults = bySource.entrySet().stream()
                 .map(e -> FeedCollectResult.success(FeedSource.valueOf(e.getKey()), e.getValue()))
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        for (DemoFeedError error : batch.feedErrors()) {
+            toFailedFeedResult(error).ifPresent(feedResults::add);
+        }
 
         FetchAndSaveResult fetchAndSave = articleSaveService.fetchAndSaveFromResults(feedResults);
         LocalDateTime step1FinishedAt = LocalDateTime.now();
@@ -218,6 +224,8 @@ public class TestPipelineService {
                 .targetType("TOPIC")
                 .targetName("ACTIVE_TOPICS")
                 .processedCount(summaries.size())
+                .successCount(summaries.size())
+                .failedCount(0)
                 .message("AI 요약 생성 완료")
                 .startedAt(step2FinishedAt)
                 .finishedAt(finishedAt)
@@ -229,7 +237,7 @@ public class TestPipelineService {
                 .mapToInt(ClusteringResult::getClustersCreated)
                 .sum();
         run.complete(
-                PipelineStatus.SUCCESS,
+                statusFromCounts(fetchAndSave.getSavedCount(), fetchAndSave.getFailedCount()),
                 fetchAndSave.getFetchedCount(),
                 fetchAndSave.getSavedCount(),
                 clustersCreated,
@@ -246,15 +254,18 @@ public class TestPipelineService {
     private void saveDemoFetchAndSaveSteps(PipelineRun run, FetchAndSaveResult result, String batchName,
                                            LocalDateTime startedAt, LocalDateTime finishedAt) {
         LocalDateTime executedAt = result.getExecutedAt() != null ? result.getExecutedAt() : finishedAt;
+        int articleSaveFailedCount = articleSaveFailedCount(result);
 
         if (result.getFeeds() == null || result.getFeeds().isEmpty()) {
             pipelineStepHistoryRepository.save(PipelineStepHistory.builder()
                     .pipelineRun(run)
                     .step(PipelineStep.RSS_COLLECT)
-                    .status(result.getFailedCount() > 0 ? PipelineStatus.FAILED : PipelineStatus.SUCCESS)
+                    .status(statusFromCounts(result.getFetchedCount(), result.getFailedCount()))
                     .targetType("DEMO_JSON")
                     .targetName(batchName)
                     .processedCount(result.getFetchedCount())
+                    .successCount(result.getFetchedCount())
+                    .failedCount(result.getFailedCount())
                     .errorType(result.getFailedCount() > 0 ? "DEMO_RSS_COLLECT_FAILED" : null)
                     .errorMessage(result.getFailedCount() > 0 ? "데모 JSON 수집/저장 단계가 실패했습니다." : null)
                     .message(result.getFailedCount() > 0 ? "RSS 수집/저장 실패" : "RSS 수집 완료")
@@ -270,7 +281,9 @@ public class TestPipelineService {
                             .targetType("PUBLISHER_FEED")
                             .targetName(feed.getPublisherName())
                             .processedCount(feed.getFetched())
-                            .errorType(feed.isCollectSuccess() ? null : "RSS_FEED_ERROR")
+                            .successCount(feed.isCollectSuccess() ? feed.getFetched() : 0)
+                            .failedCount(feed.isCollectSuccess() ? 0 : 1)
+                            .errorType(feed.isCollectSuccess() ? null : feed.getErrorType())
                             .errorMessage(feed.getErrorMessage())
                             .message(feed.isCollectSuccess() ? "RSS 피드 수집 완료" : "RSS 피드 수집 실패")
                             .startedAt(startedAt)
@@ -282,16 +295,60 @@ public class TestPipelineService {
         pipelineStepHistoryRepository.save(PipelineStepHistory.builder()
                 .pipelineRun(run)
                 .step(PipelineStep.ARTICLE_SAVE)
-                .status(result.getFailedCount() > 0 ? PipelineStatus.FAILED : PipelineStatus.SUCCESS)
+                .status(statusFromCounts(result.getSavedCount(), articleSaveFailedCount))
                 .targetType("ARTICLE")
                 .targetName("NORMALIZED_ARTICLES")
-                .processedCount(result.getSavedCount())
-                .errorType(result.getFailedCount() > 0 ? "ARTICLE_SAVE_PARTIAL_FAILED" : null)
-                .errorMessage(result.getFailedCount() > 0 ? "일부 기사 저장에 실패했습니다." : null)
-                .message("기사 저장 완료")
+                .processedCount(result.getSavedCount() + articleSaveFailedCount)
+                .successCount(result.getSavedCount())
+                .failedCount(articleSaveFailedCount)
+                .errorType(articleSaveFailedCount > 0 ? "ARTICLE_SAVE_PARTIAL_FAILED" : null)
+                .errorMessage(articleSaveFailedCount > 0 ? articleSaveFailedCount + "건의 기사 저장에 실패했습니다." : null)
+                .message(articleSaveFailedCount > 0
+                        ? String.format("기사 저장 부분 실패 (저장 %d건, 실패 %d건)", result.getSavedCount(), articleSaveFailedCount)
+                        : String.format("기사 저장 완료 (저장 %d건)", result.getSavedCount()))
                 .startedAt(executedAt)
                 .finishedAt(executedAt)
                 .build());
+
+        if (result.getValidationErrors() != null && !result.getValidationErrors().isEmpty()) {
+            pipelineStepHistoryRepository.saveAll(result.getValidationErrors().stream()
+                    .map(err -> PipelineStepHistory.builder()
+                            .pipelineRun(run)
+                            .step(PipelineStep.ARTICLE_SAVE)
+                            .status(PipelineStatus.FAILED)
+                            .targetType("ARTICLE")
+                            .targetName(err.getTargetName())
+                            .processedCount(0)
+                            .successCount(0)
+                            .failedCount(1)
+                            .errorType(err.getErrorType())
+                            .errorMessage(err.getErrorMessage())
+                            .message("필수 필드 누락으로 기사 저장 건너뜀")
+                            .startedAt(executedAt)
+                            .finishedAt(executedAt)
+                            .build())
+                    .toList());
+        }
+    }
+
+    private int articleSaveFailedCount(FetchAndSaveResult result) {
+        if (result.getFeeds() == null || result.getFeeds().isEmpty()) {
+            return result.getValidationErrors() == null ? 0 : result.getValidationErrors().size();
+        }
+        return result.getFeeds().stream()
+                .filter(FetchAndSaveResult.FeedSummary::isCollectSuccess)
+                .mapToInt(FetchAndSaveResult.FeedSummary::getFailed)
+                .sum();
+    }
+
+    private PipelineStatus statusFromCounts(int successCount, int failedCount) {
+        if (failedCount > 0 && successCount > 0) {
+            return PipelineStatus.PARTIAL_FAILED;
+        }
+        if (failedCount > 0) {
+            return PipelineStatus.FAILED;
+        }
+        return PipelineStatus.SUCCESS;
     }
 
     private void saveDemoClusteringSteps(PipelineRun run, List<ClusteringResult> results,
@@ -304,6 +361,8 @@ public class TestPipelineService {
                     .targetType("ARTICLE_CATEGORY")
                     .targetName("ALL_CATEGORIES")
                     .processedCount(0)
+                    .successCount(0)
+                    .failedCount(0)
                     .message("토픽 클러스터링 완료")
                     .startedAt(startedAt)
                     .finishedAt(finishedAt)
@@ -319,6 +378,8 @@ public class TestPipelineService {
                         .targetType("ARTICLE_CATEGORY")
                         .targetName(result.getCategory().name())
                         .processedCount(result.getClustersCreated())
+                        .successCount(result.getClustersCreated())
+                        .failedCount(0)
                         .message("토픽 클러스터링 완료")
                         .startedAt(result.getExecutedAt() != null ? result.getExecutedAt() : startedAt)
                         .finishedAt(result.getExecutedAt() != null ? result.getExecutedAt() : finishedAt)
@@ -334,6 +395,8 @@ public class TestPipelineService {
                 .targetType("PIPELINE")
                 .targetName(batchName)
                 .processedCount(0)
+                .successCount(0)
+                .failedCount(0)
                 .message("파이프라인 실행 완료")
                 .startedAt(finishedAt)
                 .finishedAt(finishedAt)
@@ -382,16 +445,59 @@ public class TestPipelineService {
         List<DemoDataBatch> batches = new ArrayList<>();
         for (File file : jsonFiles) {
             try {
-                List<ArticleCandidate> candidates = mapper.readValue(
-                        file,
-                        mapper.getTypeFactory().constructCollectionType(List.class, ArticleCandidate.class));
-                log.info("JSON 읽기 완료 file={} count={}", file.getName(), candidates.size());
-                batches.add(new DemoDataBatch(parseDateFromFileName(file), file.getName(), candidates));
+                DemoDataPayload payload = readDemoDataPayload(mapper, file);
+                log.info("JSON 읽기 완료 file={} count={} feedErrors={}",
+                        file.getName(), payload.articles().size(), payload.feedErrors().size());
+                batches.add(new DemoDataBatch(parseDateFromFileName(file), file.getName(),
+                        payload.articles(), payload.feedErrors()));
             } catch (Exception e) {
                 log.error("JSON 읽기 실패 file={} cause={}", file.getName(), e.getMessage(), e);
             }
         }
         return batches;
+    }
+
+    private DemoDataPayload readDemoDataPayload(ObjectMapper mapper, File file) throws java.io.IOException {
+        JsonNode root = mapper.readTree(file);
+        if (root.isArray()) {
+            List<ArticleCandidate> articles = mapper.convertValue(
+                    root,
+                    mapper.getTypeFactory().constructCollectionType(List.class, ArticleCandidate.class));
+            return new DemoDataPayload(articles, List.of());
+        }
+
+        JsonNode articlesNode = root.path("articles");
+        List<ArticleCandidate> articles = articlesNode.isArray()
+                ? mapper.convertValue(
+                        articlesNode,
+                        mapper.getTypeFactory().constructCollectionType(List.class, ArticleCandidate.class))
+                : List.of();
+
+        JsonNode feedErrorsNode = root.path("feedErrors");
+        List<DemoFeedError> feedErrors = feedErrorsNode.isArray()
+                ? mapper.convertValue(
+                        feedErrorsNode,
+                        mapper.getTypeFactory().constructCollectionType(List.class, DemoFeedError.class))
+                : List.of();
+
+        return new DemoDataPayload(articles, feedErrors);
+    }
+
+    private java.util.Optional<FeedCollectResult> toFailedFeedResult(DemoFeedError error) {
+        FeedSource source;
+        try {
+            source = FeedSource.valueOf(error.feedSourceCode());
+        } catch (Exception e) {
+            log.warn("알 수 없는 demo feedError feedSourceCode: {}", error.feedSourceCode());
+            return java.util.Optional.empty();
+        }
+        String errorType = error.errorType() == null || error.errorType().isBlank()
+                ? "RSS_FEED_ERROR"
+                : error.errorType();
+        String errorMessage = error.errorMessage() == null || error.errorMessage().isBlank()
+                ? "RSS 피드 수집 실패"
+                : error.errorMessage();
+        return java.util.Optional.of(FeedCollectResult.failure(source, errorType, errorMessage));
     }
 
     private LocalDate parseDateFromFileName(File file) {
@@ -458,7 +564,14 @@ public class TestPipelineService {
                 .build();
     }
 
-    private record DemoDataBatch(LocalDate date, String fileName, List<ArticleCandidate> candidates) {
+    private record DemoDataPayload(List<ArticleCandidate> articles, List<DemoFeedError> feedErrors) {
+    }
+
+    private record DemoFeedError(String feedSourceCode, String publisherName, String errorType, String errorMessage) {
+    }
+
+    private record DemoDataBatch(LocalDate date, String fileName, List<ArticleCandidate> candidates,
+                                 List<DemoFeedError> feedErrors) {
         private String historyTargetName() {
             return date != null ? date.toString() : fileName;
         }

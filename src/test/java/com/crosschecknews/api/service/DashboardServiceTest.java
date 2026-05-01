@@ -13,12 +13,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class DashboardServiceTest {
@@ -39,11 +43,10 @@ class DashboardServiceTest {
     // ── getSummary ──────────────────────────────────────────────────────────
 
     @Test
-    void totalArticles와_totalTopics가_repository_count로_집계된다() {
-        given(articleRepository.count()).willReturn(30L);
-        given(topicRepository.count()).willReturn(7L);
-        given(articleRepository.countByFetchedAtBetween(any(), any())).willReturn(0L);
-        given(pipelineStepHistoryRepository.countByStatus(PipelineStatus.FAILED)).willReturn(0L);
+    void articles와_topics가_선택_날짜_범위로_집계된다() {
+        given(articleRepository.countByFetchedAtBetween(any(), any())).willReturn(30L);
+        given(topicRepository.countByCreatedAtBetween(any(), any())).willReturn(7L);
+        given(pipelineStepHistoryRepository.countByStatusInAndStartedAtBetween(any(), any(), any())).willReturn(0L);
         given(pipelineRunRepository.findTop10ByOrderByStartedAtDesc()).willReturn(List.of());
         given(pipelineStepHistoryRepository.findTop10ByOrderByStartedAtDesc()).willReturn(List.of());
 
@@ -55,10 +58,9 @@ class DashboardServiceTest {
 
     @Test
     void todayCollectedArticles가_오늘_날짜_범위로_집계된다() {
-        given(articleRepository.count()).willReturn(10L);
-        given(topicRepository.count()).willReturn(3L);
         given(articleRepository.countByFetchedAtBetween(any(), any())).willReturn(5L);
-        given(pipelineStepHistoryRepository.countByStatus(PipelineStatus.FAILED)).willReturn(0L);
+        given(topicRepository.countByCreatedAtBetween(any(), any())).willReturn(3L);
+        given(pipelineStepHistoryRepository.countByStatusInAndStartedAtBetween(any(), any(), any())).willReturn(0L);
         given(pipelineRunRepository.findTop10ByOrderByStartedAtDesc()).willReturn(List.of());
         given(pipelineStepHistoryRepository.findTop10ByOrderByStartedAtDesc()).willReturn(List.of());
 
@@ -68,11 +70,32 @@ class DashboardServiceTest {
     }
 
     @Test
+    void date가_전달되면_해당_날짜_범위로_집계된다() {
+        LocalDate date = LocalDate.of(2026, 5, 1);
+        LocalDateTime start = LocalDateTime.of(2026, 5, 1, 0, 0);
+        LocalDateTime end = LocalDateTime.of(2026, 5, 2, 0, 0);
+
+        given(articleRepository.countByFetchedAtBetween(start, end)).willReturn(6L);
+        given(topicRepository.countByCreatedAtBetween(start, end)).willReturn(4L);
+        given(pipelineStepHistoryRepository.countByStatusInAndStartedAtBetween(any(), eq(start), eq(end))).willReturn(1L);
+        given(pipelineRunRepository.findTop10ByOrderByStartedAtDesc()).willReturn(List.of());
+        given(pipelineStepHistoryRepository.findTop10ByOrderByStartedAtDesc()).willReturn(List.of());
+
+        DashboardSummaryResponse result = service.getSummary(date);
+
+        assertThat(result.getTodayCollectedArticles()).isEqualTo(6L);
+        assertThat(result.getTotalArticles()).isEqualTo(6L);
+        assertThat(result.getTotalTopics()).isEqualTo(4L);
+        verify(articleRepository).countByFetchedAtBetween(start, end);
+        verify(topicRepository).countByCreatedAtBetween(start, end);
+        verify(pipelineStepHistoryRepository, times(2)).countByStatusInAndStartedAtBetween(any(), eq(start), eq(end));
+    }
+
+    @Test
     void failedJobs가_FAILED_상태_기준으로_집계된다() {
-        given(articleRepository.count()).willReturn(0L);
-        given(topicRepository.count()).willReturn(0L);
         given(articleRepository.countByFetchedAtBetween(any(), any())).willReturn(0L);
-        given(pipelineStepHistoryRepository.countByStatus(PipelineStatus.FAILED)).willReturn(3L);
+        given(topicRepository.countByCreatedAtBetween(any(), any())).willReturn(0L);
+        given(pipelineStepHistoryRepository.countByStatusInAndStartedAtBetween(any(), any(), any())).willReturn(3L);
         given(pipelineRunRepository.findTop10ByOrderByStartedAtDesc()).willReturn(List.of());
         given(pipelineStepHistoryRepository.findTop10ByOrderByStartedAtDesc()).willReturn(List.of());
 
@@ -91,10 +114,9 @@ class DashboardServiceTest {
                 .finishedAt(expectedTime)
                 .build();
 
-        given(articleRepository.count()).willReturn(0L);
-        given(topicRepository.count()).willReturn(0L);
         given(articleRepository.countByFetchedAtBetween(any(), any())).willReturn(0L);
-        given(pipelineStepHistoryRepository.countByStatus(PipelineStatus.FAILED)).willReturn(0L);
+        given(topicRepository.countByCreatedAtBetween(any(), any())).willReturn(0L);
+        given(pipelineStepHistoryRepository.countByStatusInAndStartedAtBetween(any(), any(), any())).willReturn(0L);
         given(pipelineRunRepository.findTop10ByOrderByStartedAtDesc()).willReturn(List.of(recentRun));
         given(pipelineStepHistoryRepository.findTop10ByOrderByStartedAtDesc()).willReturn(List.of());
 
@@ -111,10 +133,9 @@ class DashboardServiceTest {
                 .startedAt(LocalDateTime.now())
                 .build();
 
-        given(articleRepository.count()).willReturn(0L);
-        given(topicRepository.count()).willReturn(0L);
         given(articleRepository.countByFetchedAtBetween(any(), any())).willReturn(0L);
-        given(pipelineStepHistoryRepository.countByStatus(PipelineStatus.FAILED)).willReturn(0L);
+        given(topicRepository.countByCreatedAtBetween(any(), any())).willReturn(0L);
+        given(pipelineStepHistoryRepository.countByStatusInAndStartedAtBetween(any(), any(), any())).willReturn(0L);
         given(pipelineRunRepository.findTop10ByOrderByStartedAtDesc()).willReturn(List.of(runningRun));
         given(pipelineStepHistoryRepository.findTop10ByOrderByStartedAtDesc()).willReturn(List.of());
 
@@ -142,10 +163,9 @@ class DashboardServiceTest {
                 .startedAt(startTime).finishedAt(endTime)
                 .build();
 
-        given(articleRepository.count()).willReturn(0L);
-        given(topicRepository.count()).willReturn(0L);
         given(articleRepository.countByFetchedAtBetween(any(), any())).willReturn(0L);
-        given(pipelineStepHistoryRepository.countByStatus(PipelineStatus.FAILED)).willReturn(0L);
+        given(topicRepository.countByCreatedAtBetween(any(), any())).willReturn(0L);
+        given(pipelineStepHistoryRepository.countByStatusInAndStartedAtBetween(any(), any(), any())).willReturn(0L);
         given(pipelineRunRepository.findTop10ByOrderByStartedAtDesc()).willReturn(List.of());
         given(pipelineStepHistoryRepository.findTop10ByOrderByStartedAtDesc()).willReturn(List.of(history));
 
@@ -171,9 +191,9 @@ class DashboardServiceTest {
                 new Object[]{"NYT", 3L}
         ));
         given(topicRepository.countTopicsByCountry()).willReturn(List.of());
-        given(pipelineRunRepository.countByStatus(any())).willReturn(0L);
+        given(pipelineStepHistoryRepository.countByStatusAndStartedAtBetween(any(), any(), any())).willReturn(0L);
 
-        DashboardChartsResponse result = service.getCharts();
+        DashboardChartsResponse result = service.getCharts(LocalDate.now());
 
         assertThat(result.getArticlesByPublisher()).hasSize(2);
         assertThat(result.getArticlesByPublisher().get(0).getName()).isEqualTo("Fox News");
@@ -189,9 +209,9 @@ class DashboardServiceTest {
                 new Object[]{Country.US, 5L},
                 new Object[]{Country.KR, 2L}
         ));
-        given(pipelineRunRepository.countByStatus(any())).willReturn(0L);
+        given(pipelineStepHistoryRepository.countByStatusAndStartedAtBetween(any(), any(), any())).willReturn(0L);
 
-        DashboardChartsResponse result = service.getCharts();
+        DashboardChartsResponse result = service.getCharts(LocalDate.now());
 
         assertThat(result.getTopicsByCountry()).hasSize(2);
         assertThat(result.getTopicsByCountry().get(0).getName()).isEqualTo("US");
@@ -203,18 +223,19 @@ class DashboardServiceTest {
     void pipelineStatusCounts가_모든_PipelineStatus_값을_포함한다() {
         given(articleRepository.countArticlesByPublisher()).willReturn(List.of());
         given(topicRepository.countTopicsByCountry()).willReturn(List.of());
-        given(pipelineRunRepository.countByStatus(PipelineStatus.RUNNING)).willReturn(1L);
-        given(pipelineRunRepository.countByStatus(PipelineStatus.SUCCESS)).willReturn(10L);
-        given(pipelineRunRepository.countByStatus(PipelineStatus.FAILED)).willReturn(2L);
+        given(pipelineStepHistoryRepository.countByStatusAndStartedAtBetween(eq(PipelineStatus.RUNNING), any(), any())).willReturn(1L);
+        given(pipelineStepHistoryRepository.countByStatusAndStartedAtBetween(eq(PipelineStatus.SUCCESS), any(), any())).willReturn(10L);
+        given(pipelineStepHistoryRepository.countByStatusAndStartedAtBetween(eq(PipelineStatus.PARTIAL_FAILED), any(), any())).willReturn(3L);
+        given(pipelineStepHistoryRepository.countByStatusAndStartedAtBetween(eq(PipelineStatus.FAILED), any(), any())).willReturn(2L);
 
-        DashboardChartsResponse result = service.getCharts();
+        DashboardChartsResponse result = service.getCharts(LocalDate.now());
 
         assertThat(result.getPipelineStatusCounts()).hasSize(PipelineStatus.values().length);
         assertThat(result.getPipelineStatusCounts())
                 .extracting(DashboardChartsResponse.NamedCount::getName)
-                .containsExactly("RUNNING", "SUCCESS", "FAILED");
+                .containsExactly("RUNNING", "SUCCESS", "PARTIAL_FAILED", "FAILED");
         assertThat(result.getPipelineStatusCounts())
                 .extracting(DashboardChartsResponse.NamedCount::getCount)
-                .containsExactly(1L, 10L, 2L);
+                .containsExactly(1L, 10L, 3L, 2L);
     }
 }

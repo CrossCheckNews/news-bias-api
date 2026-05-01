@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
@@ -49,51 +50,110 @@ class PipelineStepHistoryControllerTest {
     @Test
     void 날짜_없이_전체_이력을_조회하면_페이지네이션_결과를_반환한다() throws Exception {
         Page<PipelineStepHistoryResponse> page = new PageImpl<>(List.of(stubItem()), PageRequest.of(0, 20), 1);
-        given(pipelineStepHistoryService.getHistories(isNull(), eq(0), eq(20))).willReturn(page);
+        given(pipelineStepHistoryService.getHistories(isNull(), argThat(List::isEmpty), eq(0), eq(20))).willReturn(page);
 
         mockMvc.perform(get("/api/v1/pipeline/histories"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content.length()").value(1))
-                .andExpect(jsonPath("$.content[0].id").value(1))
-                .andExpect(jsonPath("$.content[0].pipelineRunId").value(10))
-                .andExpect(jsonPath("$.content[0].step").value("RSS_COLLECT"))
-                .andExpect(jsonPath("$.content[0].status").value("SUCCESS"))
-                .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.totalPages").value(1));
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].id").value(1))
+                .andExpect(jsonPath("$.items[0].pipelineRunId").value(10))
+                .andExpect(jsonPath("$.items[0].step").value("RSS_COLLECT"))
+                .andExpect(jsonPath("$.items[0].status").value("SUCCESS"))
+                .andExpect(jsonPath("$.pagination.totalElements").value(1))
+                .andExpect(jsonPath("$.pagination.totalPages").value(1));
     }
 
     @Test
     void 날짜_조건으로_이력을_조회한다() throws Exception {
         Page<PipelineStepHistoryResponse> page = new PageImpl<>(List.of(stubItem()), PageRequest.of(0, 20), 1);
-        given(pipelineStepHistoryService.getHistories(any(), eq(0), eq(20))).willReturn(page);
+        given(pipelineStepHistoryService.getHistories(any(), argThat(List::isEmpty), eq(0), eq(20))).willReturn(page);
 
         mockMvc.perform(get("/api/v1/pipeline/histories").param("date", "2026-04-30"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content[0].targetName").value("BBC"));
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.items[0].targetName").value("BBC"));
     }
 
     @Test
     void 페이지_크기를_지정해서_이력을_조회한다() throws Exception {
         Page<PipelineStepHistoryResponse> page = new PageImpl<>(List.of(), PageRequest.of(1, 10), 0);
-        given(pipelineStepHistoryService.getHistories(isNull(), eq(1), eq(10))).willReturn(page);
+        given(pipelineStepHistoryService.getHistories(isNull(), argThat(List::isEmpty), eq(1), eq(10))).willReturn(page);
 
         mockMvc.perform(get("/api/v1/pipeline/histories").param("page", "1").param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.totalElements").value(0));
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.pagination.totalElements").value(0));
     }
 
     @Test
     void 이력이_없으면_빈_페이지를_반환한다() throws Exception {
         Page<PipelineStepHistoryResponse> page = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
-        given(pipelineStepHistoryService.getHistories(isNull(), eq(0), eq(20))).willReturn(page);
+        given(pipelineStepHistoryService.getHistories(isNull(), argThat(List::isEmpty), eq(0), eq(20))).willReturn(page);
 
         mockMvc.perform(get("/api/v1/pipeline/histories"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content.length()").value(0))
-                .andExpect(jsonPath("$.totalElements").value(0));
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.items.length()").value(0))
+                .andExpect(jsonPath("$.pagination.totalElements").value(0));
+    }
+
+    @Test
+    void status_FAILED_조건으로_이력을_조회한다() throws Exception {
+        PipelineStepHistoryResponse failedItem = PipelineStepHistoryResponse.builder()
+                .id(2L).pipelineRunId(10L)
+                .step(PipelineStep.ARTICLE_SAVE).status(PipelineStatus.FAILED)
+                .targetType("ARTICLE").targetName("https://example.com/article")
+                .processedCount(0).errorType("MISSING_REQUIRED_FIELD")
+                .errorMessage("headline이 null 또는 빈 값입니다")
+                .message("필수 필드 누락으로 기사 저장 건너뜀")
+                .startedAt(LocalDateTime.of(2026, 4, 30, 9, 0))
+                .finishedAt(LocalDateTime.of(2026, 4, 30, 9, 0))
+                .build();
+        Page<PipelineStepHistoryResponse> page = new PageImpl<>(List.of(failedItem), PageRequest.of(0, 20), 1);
+        given(pipelineStepHistoryService.getHistories(isNull(), eq(List.of(PipelineStatus.FAILED)), eq(0), eq(20))).willReturn(page);
+
+        mockMvc.perform(get("/api/v1/pipeline/histories").param("status", "FAILED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].status").value("FAILED"))
+                .andExpect(jsonPath("$.items[0].errorType").value("MISSING_REQUIRED_FIELD"))
+                .andExpect(jsonPath("$.pagination.totalElements").value(1));
+    }
+
+    @Test
+    void 날짜와_status를_함께_조회한다() throws Exception {
+        Page<PipelineStepHistoryResponse> page = new PageImpl<>(List.of(stubItem()), PageRequest.of(0, 20), 1);
+        given(pipelineStepHistoryService.getHistories(any(), eq(List.of(PipelineStatus.SUCCESS)), eq(0), eq(20))).willReturn(page);
+
+        mockMvc.perform(get("/api/v1/pipeline/histories")
+                        .param("date", "2026-04-30")
+                        .param("status", "SUCCESS"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].status").value("SUCCESS"));
+    }
+
+    @Test
+    void 여러_status를_함께_조회한다() throws Exception {
+        PipelineStepHistoryResponse failedItem = PipelineStepHistoryResponse.builder()
+                .id(2L).pipelineRunId(10L)
+                .step(PipelineStep.ARTICLE_SAVE).status(PipelineStatus.FAILED)
+                .targetType("ARTICLE").targetName("NORMALIZED_ARTICLES")
+                .processedCount(1).failedCount(1)
+                .message("기사 저장 실패")
+                .startedAt(LocalDateTime.of(2026, 4, 30, 9, 0))
+                .finishedAt(LocalDateTime.of(2026, 4, 30, 9, 0))
+                .build();
+        Page<PipelineStepHistoryResponse> page = new PageImpl<>(List.of(failedItem), PageRequest.of(0, 20), 1);
+        given(pipelineStepHistoryService.getHistories(
+                isNull(),
+                eq(List.of(PipelineStatus.FAILED, PipelineStatus.PARTIAL_FAILED)),
+                eq(0),
+                eq(20))
+        ).willReturn(page);
+
+        mockMvc.perform(get("/api/v1/pipeline/histories")
+                        .param("statuses", "FAILED", "PARTIAL_FAILED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].status").value("FAILED"));
     }
 }

@@ -72,6 +72,33 @@ class TestPipelineServiceDemoLoadTest {
             ]
             """;
 
+    private static final String DEMO_DATA_WITH_FEED_ERRORS_JSON = """
+            {
+              "articles": [
+                {
+                  "publisherCode": "FOX_WORLD",
+                  "publisherName": "Fox News",
+                  "country": "US",
+                  "politicalLeaning": "CONSERVATIVE",
+                  "category": "WORLD",
+                  "headline": "Test Headline Fox",
+                  "url": "https://fox.com/test",
+                  "description": "desc",
+                  "rssGuid": "guid-fox-1",
+                  "publishedAt": "2026-04-29T10:00:00"
+                }
+              ],
+              "feedErrors": [
+                {
+                  "feedSourceCode": "NYT_WORLD",
+                  "publisherName": "New York Times",
+                  "errorType": "RSS_TIMEOUT",
+                  "errorMessage": "Connection timeout after 30s"
+                }
+              ]
+            }
+            """;
+
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(testPipelineService, "demoDataPath", tempDir.toString());
@@ -148,6 +175,27 @@ class TestPipelineServiceDemoLoadTest {
         TestPipelineResult result = testPipelineService.loadFromDemoData();
 
         assertThat(result.getExecutedAt()).isNotNull();
+    }
+
+    @Test
+    void 객체형_demo_JSON의_feedErrors를_실패_피드로_전달한다() throws IOException {
+        Files.writeString(tempDir.resolve("2026-04-29.json"), DEMO_DATA_WITH_FEED_ERRORS_JSON);
+
+        given(articleSaveService.fetchAndSaveFromResults(any())).willReturn(stubSaveResult(1));
+        given(topicClusteringService.cluster(any())).willReturn(emptyCluster());
+        given(aiSummaryService.summarizeAll()).willReturn(List.of());
+
+        testPipelineService.loadFromDemoData();
+
+        verify(articleSaveService).fetchAndSaveFromResults(argThat(list ->
+                list.size() == 2 &&
+                list.stream().anyMatch(f -> f.isSuccess() && f.getFeedSourceCode().equals("FOX_WORLD")) &&
+                list.stream().anyMatch(f ->
+                        !f.isSuccess() &&
+                        f.getFeedSourceCode().equals("NYT_WORLD") &&
+                        f.getErrorType().equals("RSS_TIMEOUT") &&
+                        f.getErrorMessage().equals("Connection timeout after 30s"))
+        ));
     }
 
     // ── 예외 케이스 ──────────────────────────────────────────────────────────

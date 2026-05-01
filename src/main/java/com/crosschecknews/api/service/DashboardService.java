@@ -30,8 +30,23 @@ public class DashboardService {
     private final PipelineStepHistoryRepository pipelineStepHistoryRepository;
 
     public DashboardSummaryResponse getSummary() {
-        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        return getSummary(null);
+    }
+
+    public DashboardSummaryResponse getSummary(LocalDate date) {
+        LocalDate targetDate = date != null ? date : LocalDate.now();
+        LocalDateTime todayStart = targetDate.atStartOfDay();
         LocalDateTime tomorrowStart = todayStart.plusDays(1);
+
+        long successJobs = pipelineStepHistoryRepository.countByStatusInAndStartedAtBetween(
+                List.of(PipelineStatus.SUCCESS, PipelineStatus.PARTIAL_FAILED), todayStart, tomorrowStart
+        );
+
+        long failedJobs = pipelineStepHistoryRepository.countByStatusInAndStartedAtBetween(
+                List.of(PipelineStatus.FAILED, PipelineStatus.PARTIAL_FAILED), todayStart, tomorrowStart
+        );
+        long articleCount = articleRepository.countByFetchedAtBetween(todayStart, tomorrowStart);
+        long topicCount = topicRepository.countByCreatedAtBetween(todayStart, tomorrowStart);
 
         LocalDateTime lastCollectedAt = pipelineRunRepository.findTop10ByOrderByStartedAtDesc().stream()
                 .map(PipelineRun::getFinishedAt)
@@ -40,27 +55,14 @@ public class DashboardService {
                 .orElse(null);
 
         return DashboardSummaryResponse.builder()
-                .totalArticles(articleRepository.count())
-                .totalTopics(topicRepository.count())
-                .todayCollectedArticles(articleRepository.countByFetchedAtBetween(todayStart, tomorrowStart))
-                .failedJobs(pipelineStepHistoryRepository.countByStatus(PipelineStatus.FAILED))
+                .totalArticles(articleCount)
+                .totalTopics(topicCount)
+                .todayCollectedArticles(articleCount)
+                .successJobs(successJobs)
+                .failedJobs(failedJobs)
                 .lastCollectedAt(lastCollectedAt)
                 .recentRuns(pipelineStepHistoryRepository.findTop10ByOrderByStartedAtDesc().stream()
                         .map(this::toRunItem)
-                        .toList())
-                .build();
-    }
-
-    public DashboardChartsResponse getCharts() {
-        return DashboardChartsResponse.builder()
-                .articlesByPublisher(articleRepository.countArticlesByPublisher().stream()
-                        .map(row -> namedCount((String) row[0], (Long) row[1]))
-                        .toList())
-                .topicsByCountry(topicRepository.countTopicsByCountry().stream()
-                        .map(row -> namedCount(((Country) row[0]).name(), (Long) row[1]))
-                        .toList())
-                .pipelineStatusCounts(Arrays.stream(PipelineStatus.values())
-                        .map(status -> namedCount(status.name(), pipelineRunRepository.countByStatus(status)))
                         .toList())
                 .build();
     }
@@ -77,6 +79,8 @@ public class DashboardService {
                 .clusteredCount(run.getClusteredCount())
                 .summarizedCount(run.getSummarizedCount())
                 .processedCount(history.getProcessedCount())
+                .successCount(history.getSuccessCount())
+                .failedCount(history.getFailedCount())
                 .targetType(history.getTargetType())
                 .targetName(history.getTargetName())
                 .errorType(history.getErrorType())
@@ -84,6 +88,25 @@ public class DashboardService {
                 .message(history.getMessage())
                 .startedAt(history.getStartedAt())
                 .finishedAt(history.getFinishedAt())
+                .build();
+    }
+
+    public DashboardChartsResponse getCharts(LocalDate date) {
+        LocalDate targetDate = date != null ? date : LocalDate.now();
+        LocalDateTime from = targetDate.atStartOfDay();
+        LocalDateTime to = from.plusDays(1);
+
+        return DashboardChartsResponse.builder()
+                .articlesByPublisher(articleRepository.countArticlesByPublisher().stream()
+                        .map(row -> namedCount((String) row[0], (Long) row[1]))
+                        .toList())
+                .topicsByCountry(topicRepository.countTopicsByCountry().stream()
+                        .map(row -> namedCount(((Country) row[0]).name(), (Long) row[1]))
+                        .toList())
+                .pipelineStatusCounts(Arrays.stream(PipelineStatus.values())
+                        .map(status -> namedCount(status.name(),
+                                pipelineStepHistoryRepository.countByStatusAndStartedAtBetween(status, from, to)))
+                        .toList())
                 .build();
     }
 

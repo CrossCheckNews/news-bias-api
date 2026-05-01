@@ -8,9 +8,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.time.LocalDate;
 
 @Tag(name = "Dashboard", description = "데이터 파이프라인 모니터링 대시보드 API")
 @RestController
@@ -22,14 +26,9 @@ public class DashboardController {
 
     @Operation(summary = "파이프라인 이력/요약 대시보드")
     @GetMapping("/api/dashboard/summary")
-    public DashboardSummaryResponse getSummary() {
-        return dashboardService.getSummary();
-    }
-
-    @Operation(summary = "데이터 시각화 차트 대시보드")
-    @GetMapping("/api/dashboard/charts")
-    public DashboardChartsResponse getCharts() {
-        return dashboardService.getCharts();
+    public DashboardSummaryResponse getSummary(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return dashboardService.getSummary(date);
     }
 
     @Operation(summary = "SSE 기반 실시간 파이프라인 모니터링")
@@ -39,4 +38,12 @@ public class DashboardController {
         eventPublisher.register(emitter);
         return emitter;
     }
+
+    @Operation(summary = "데이터 시각화 차트 대시보드")
+    @GetMapping("/api/dashboard/charts")
+    public DashboardChartsResponse getCharts(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return dashboardService.getCharts(date);
+    }
+
 }
