@@ -9,9 +9,10 @@ import com.crosschecknews.api.exception.ResourceNotFoundException;
 import com.crosschecknews.api.repository.ArticleRepository;
 import com.crosschecknews.api.repository.TopicArticleRepository;
 import com.crosschecknews.api.repository.TopicRepository;
+import com.crosschecknews.api.util.PageUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,7 +44,8 @@ public class TopicService {
         return TopicResponse.empty(saved);
     }
 
-    public Page<TopicResponse> findAll(TopicStatus status, LocalDate date, Pageable pageable) {
+    public Page<TopicResponse> findAll(TopicStatus status, LocalDate date, int page, int size) {
+        var pageable = PageUtil.of(page, size, Sort.Order.desc("createdAt"));
         Page<Topic> topics;
         if (date != null) {
             LocalDateTime from = date.atStartOfDay();

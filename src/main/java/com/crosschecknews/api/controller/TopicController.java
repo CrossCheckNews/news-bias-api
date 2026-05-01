@@ -16,9 +16,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -54,8 +51,7 @@ public class TopicController {
                     """,
             parameters = {
                     @Parameter(name = "page", description = "페이지 번호 (0부터 시작)", in = ParameterIn.QUERY, schema = @Schema(type = "integer", defaultValue = "0")),
-                    @Parameter(name = "size", description = "페이지 크기", in = ParameterIn.QUERY, schema = @Schema(type = "integer", defaultValue = "20")),
-                    @Parameter(name = "sort", description = "정렬 (예: createdAt,desc)", in = ParameterIn.QUERY, schema = @Schema(type = "string", defaultValue = "createdAt,desc"))
+                    @Parameter(name = "size", description = "페이지 크기", in = ParameterIn.QUERY, schema = @Schema(type = "integer", defaultValue = "20"))
             }
     )
     @GetMapping
@@ -64,10 +60,10 @@ public class TopicController {
             @RequestParam(required = false) TopicStatus status,
             @Parameter(description = "생성일 기준 날짜 필터 (yyyy-MM-dd). 예: 2026-04-06. 생략 시 전체 조회.")
             @RequestParam(required = false) LocalDate date,
-            @Parameter(hidden = true)
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
     ) {
-        return topicService.findAll(status, date, pageable);
+        return topicService.findAll(status, date, page, size);
     }
 
     @Operation(

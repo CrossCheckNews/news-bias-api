@@ -1,7 +1,11 @@
 package com.crosschecknews.api.service;
 
 import com.crosschecknews.api.domain.ArticleCategory;
+import com.crosschecknews.api.domain.PipelineRun;
+import com.crosschecknews.api.domain.PipelineStatus;
 import com.crosschecknews.api.dto.*;
+import com.crosschecknews.api.repository.PipelineRunRepository;
+import com.crosschecknews.api.repository.PipelineStepHistoryRepository;
 import com.crosschecknews.api.repository.TopicArticleRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,11 +31,13 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class TestPipelineServiceDemoLoadTest {
 
-    @Mock ArticleSaveService     articleSaveService;
-    @Mock TopicClusteringService topicClusteringService;
-    @Mock AiSummaryService       aiSummaryService;
-    @Mock TopicArticleRepository topicArticleRepository;
-    @Mock RssCollectService      rssCollectService;
+    @Mock ArticleSaveService            articleSaveService;
+    @Mock TopicClusteringService        topicClusteringService;
+    @Mock AiSummaryService              aiSummaryService;
+    @Mock TopicArticleRepository        topicArticleRepository;
+    @Mock RssCollectService             rssCollectService;
+    @Mock PipelineRunRepository         pipelineRunRepository;
+    @Mock PipelineStepHistoryRepository pipelineStepHistoryRepository;
 
     @InjectMocks TestPipelineService testPipelineService;
 
@@ -69,6 +75,12 @@ class TestPipelineServiceDemoLoadTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(testPipelineService, "demoDataPath", tempDir.toString());
+        given(pipelineRunRepository.save(any())).willReturn(
+                PipelineRun.builder()
+                        .id(1L).status(PipelineStatus.RUNNING)
+                        .fetchedCount(0).savedCount(0).clusteredCount(0).summarizedCount(0)
+                        .startedAt(LocalDateTime.now())
+                        .build());
     }
 
     private FetchAndSaveResult stubSaveResult(int saved) {
@@ -109,19 +121,19 @@ class TestPipelineServiceDemoLoadTest {
     }
 
     @Test
-    void 여러_JSON_파일이_있으면_모두_합쳐서_처리한다() throws IOException {
+    void 여러_JSON_파일이_있으면_날짜별로_나눠서_처리한다() throws IOException {
         Files.writeString(tempDir.resolve("2026-04-28.json"), ARTICLE_JSON);
         Files.writeString(tempDir.resolve("2026-04-29.json"), ARTICLE_JSON);
 
-        given(articleSaveService.fetchAndSaveFromResults(any())).willReturn(stubSaveResult(4));
+        given(articleSaveService.fetchAndSaveFromResults(any())).willReturn(stubSaveResult(2));
         given(topicClusteringService.cluster(any())).willReturn(emptyCluster());
         given(aiSummaryService.summarizeAll()).willReturn(List.of());
 
-        testPipelineService.loadFromDemoData();
+        TestPipelineResult result = testPipelineService.loadFromDemoData();
 
-        // 두 파일 합산 4건 → publisher별 그룹핑 후 2개 FeedCollectResult
-        verify(articleSaveService).fetchAndSaveFromResults(argThat(list ->
-                list.stream().mapToInt(FeedCollectResult::getCount).sum() == 4
+        assertThat(result.getFetchAndSave().getSavedCount()).isEqualTo(4);
+        verify(articleSaveService, times(2)).fetchAndSaveFromResults(argThat(list ->
+                list.stream().mapToInt(FeedCollectResult::getCount).sum() == 2
         ));
     }
 

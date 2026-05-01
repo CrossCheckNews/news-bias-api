@@ -4,9 +4,10 @@ import com.crosschecknews.api.domain.Article;
 import com.crosschecknews.api.dto.ArticleResponse;
 import com.crosschecknews.api.exception.ResourceNotFoundException;
 import com.crosschecknews.api.repository.ArticleRepository;
+import com.crosschecknews.api.util.PageUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +18,8 @@ public class ArticleService {
 
     private final ArticleRepository articleRepository;
 
-    public Page<ArticleResponse> findAll(Long publisherId, Pageable pageable) {
+    public Page<ArticleResponse> findAll(Long publisherId, int page, int size) {
+        var pageable = PageUtil.of(page, size, Sort.Order.desc("publishedAt"));
         if (publisherId != null) {
             return articleRepository.findByPublisherId(publisherId, pageable)
                     .map(ArticleResponse::from);
