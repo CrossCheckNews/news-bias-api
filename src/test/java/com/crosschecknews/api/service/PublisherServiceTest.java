@@ -11,6 +11,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -41,11 +44,12 @@ class PublisherServiceTest {
 
     @Test
     void 언론사_목록_조회() {
-        given(publisherRepository.findAll()).willReturn(List.of(buildPublisher(1L), buildPublisher(2L)));
+        given(publisherRepository.findAll(any(Pageable.class)))
+                .willReturn(new PageImpl<>(List.of(buildPublisher(1L), buildPublisher(2L))));
 
-        List<PublisherResponse> result = publisherService.findAll();
+        Page<PublisherResponse> result = publisherService.findAll(0, 20);
 
-        assertThat(result).hasSize(2);
+        assertThat(result.getContent()).hasSize(2);
     }
 
     @Test

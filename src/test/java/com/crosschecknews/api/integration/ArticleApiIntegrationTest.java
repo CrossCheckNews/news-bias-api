@@ -36,7 +36,7 @@ class ArticleApiIntegrationTest {
     void 기사_목록_조회_초기에는_비어있음() throws Exception {
         mockMvc.perform(get("/api/v1/articles"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(0));
+                .andExpect(jsonPath("$.pagination.totalElements").value(0));
     }
 
     @Test
@@ -60,13 +60,13 @@ class ArticleApiIntegrationTest {
 
         mockMvc.perform(get("/api/v1/articles"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.content[0].headline").value("Global Trade War Escalates"))
-                .andExpect(jsonPath("$.content[0].publisherName").value("NYT"));
+                .andExpect(jsonPath("$.pagination.totalElements").value(1))
+                .andExpect(jsonPath("$.items[0].headline").value("Global Trade War Escalates"))
+                .andExpect(jsonPath("$.items[0].publisherName").value("NYT"));
     }
 
     @Test
-    void publisherId_필터로_해당_언론사_기사만_조회됨() throws Exception {
+    void headline_필터로_해당_키워드_포함_기사만_조회됨() throws Exception {
         Publisher nyt = publisherRepository.save(Publisher.builder()
                 .name("NYT")
                 .country(Country.US)
@@ -80,8 +80,8 @@ class ArticleApiIntegrationTest {
                 .build());
 
         articleRepository.save(Article.builder()
-                .headline("NYT Article")
-                .normalizedHeadline("nyt article")
+                .headline("Global Trade War Escalates")
+                .normalizedHeadline("global trade war escalates")
                 .url("https://nytimes.com/1")
                 .normalizedUrl("https://nytimes.com/1")
                 .rssGuid("nyt-1")
@@ -91,8 +91,8 @@ class ArticleApiIntegrationTest {
                 .build());
 
         articleRepository.save(Article.builder()
-                .headline("Fox Article")
-                .normalizedHeadline("fox article")
+                .headline("Fox Politics Coverage")
+                .normalizedHeadline("fox politics coverage")
                 .url("https://foxnews.com/1")
                 .normalizedUrl("https://foxnews.com/1")
                 .rssGuid("fox-1")
@@ -101,11 +101,11 @@ class ArticleApiIntegrationTest {
                 .category(ArticleCategory.WORLD)
                 .build());
 
-        // NYT 기사만 조회
-        mockMvc.perform(get("/api/v1/articles").param("publisherId", nyt.getId().toString()))
+        // "Trade" 키워드로 필터링 — NYT 기사 1건만 일치
+        mockMvc.perform(get("/api/v1/articles").param("headline", "Trade"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.content[0].headline").value("NYT Article"));
+                .andExpect(jsonPath("$.pagination.totalElements").value(1))
+                .andExpect(jsonPath("$.items[0].headline").value("Global Trade War Escalates"));
     }
 
     @Test

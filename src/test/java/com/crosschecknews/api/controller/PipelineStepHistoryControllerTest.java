@@ -54,14 +54,14 @@ class PipelineStepHistoryControllerTest {
 
         mockMvc.perform(get("/api/v1/pipeline/histories"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content.length()").value(1))
-                .andExpect(jsonPath("$.content[0].id").value(1))
-                .andExpect(jsonPath("$.content[0].pipelineRunId").value(10))
-                .andExpect(jsonPath("$.content[0].step").value("RSS_COLLECT"))
-                .andExpect(jsonPath("$.content[0].status").value("SUCCESS"))
-                .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.totalPages").value(1));
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].id").value(1))
+                .andExpect(jsonPath("$.items[0].pipelineRunId").value(10))
+                .andExpect(jsonPath("$.items[0].step").value("RSS_COLLECT"))
+                .andExpect(jsonPath("$.items[0].status").value("SUCCESS"))
+                .andExpect(jsonPath("$.pagination.totalElements").value(1))
+                .andExpect(jsonPath("$.pagination.totalPages").value(1));
     }
 
     @Test
@@ -71,8 +71,8 @@ class PipelineStepHistoryControllerTest {
 
         mockMvc.perform(get("/api/v1/pipeline/histories").param("date", "2026-04-30"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content[0].targetName").value("BBC"));
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.items[0].targetName").value("BBC"));
     }
 
     @Test
@@ -82,8 +82,8 @@ class PipelineStepHistoryControllerTest {
 
         mockMvc.perform(get("/api/v1/pipeline/histories").param("page", "1").param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.totalElements").value(0));
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.pagination.totalElements").value(0));
     }
 
     @Test
@@ -93,9 +93,9 @@ class PipelineStepHistoryControllerTest {
 
         mockMvc.perform(get("/api/v1/pipeline/histories"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content.length()").value(0))
-                .andExpect(jsonPath("$.totalElements").value(0));
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.items.length()").value(0))
+                .andExpect(jsonPath("$.pagination.totalElements").value(0));
     }
 
     @Test
@@ -115,9 +115,9 @@ class PipelineStepHistoryControllerTest {
 
         mockMvc.perform(get("/api/v1/pipeline/histories").param("status", "FAILED"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].status").value("FAILED"))
-                .andExpect(jsonPath("$.content[0].errorType").value("MISSING_REQUIRED_FIELD"))
-                .andExpect(jsonPath("$.totalElements").value(1));
+                .andExpect(jsonPath("$.items[0].status").value("FAILED"))
+                .andExpect(jsonPath("$.items[0].errorType").value("MISSING_REQUIRED_FIELD"))
+                .andExpect(jsonPath("$.pagination.totalElements").value(1));
     }
 
     @Test
@@ -129,7 +129,7 @@ class PipelineStepHistoryControllerTest {
                         .param("date", "2026-04-30")
                         .param("status", "SUCCESS"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].status").value("SUCCESS"));
+                .andExpect(jsonPath("$.items[0].status").value("SUCCESS"));
     }
 
     @Test
@@ -154,6 +154,6 @@ class PipelineStepHistoryControllerTest {
         mockMvc.perform(get("/api/v1/pipeline/histories")
                         .param("statuses", "FAILED", "PARTIAL_FAILED"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].status").value("FAILED"));
+                .andExpect(jsonPath("$.items[0].status").value("FAILED"));
     }
 }

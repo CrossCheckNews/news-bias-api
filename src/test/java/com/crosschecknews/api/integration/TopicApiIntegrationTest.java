@@ -62,7 +62,7 @@ class TopicApiIntegrationTest {
         // 목록 조회 — 방금 생성한 토픽이 포함됨
         mockMvc.perform(get("/api/v1/topics"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].aiSummaryTitle").value("미국 관세 정책 논란"));
+                .andExpect(jsonPath("$.items[0].aiSummaryTitle").value("미국 관세 정책 논란"));
 
         // 단건 조회
         String topicIdStr = mockMvc.perform(post("/api/v1/topics")
@@ -246,8 +246,8 @@ class TopicApiIntegrationTest {
         // ACTIVE만 필터
         mockMvc.perform(get("/api/v1/topics").param("status", "ACTIVE"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.content[0].aiSummaryTitle").value("ACTIVE 토픽"))
-                .andExpect(jsonPath("$.content[0].status").value("ACTIVE"));
+                .andExpect(jsonPath("$.pagination.totalElements").value(1))
+                .andExpect(jsonPath("$.items[0].aiSummaryTitle").value("ACTIVE 토픽"))
+                .andExpect(jsonPath("$.items[0].status").value("ACTIVE"));
     }
 }

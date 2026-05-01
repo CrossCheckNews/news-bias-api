@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-05-01T10:03:11.041Z",
+  "lastUpdated": "2026-05-01T10:32:12.956Z",
   "activeFeatures": [
     "domain",
     "repository",
@@ -25,9 +25,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:26:48.502Z",
-        "lastUpdated": "2026-04-27T13:29:43.081Z"
+        "lastUpdated": "2026-05-01T10:31:19.571Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/domain/PipelineRun.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/domain/Publisher.java"
     },
     "repository": {
       "phase": "do",
@@ -77,9 +77,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:31:56.447Z",
-        "lastUpdated": "2026-05-01T10:00:11.308Z"
+        "lastUpdated": "2026-05-01T10:26:34.499Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/service/PublisherService.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/service/DashboardServiceTest.java"
     },
     "controller": {
       "phase": "do",
@@ -90,9 +90,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:36:43.382Z",
-        "lastUpdated": "2026-05-01T10:03:11.040Z"
+        "lastUpdated": "2026-05-01T10:28:32.132Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/controller/PipelineStepHistoryController.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/controller/PipelineStepHistoryControllerTest.java"
     },
     "config": {
       "phase": "do",
@@ -155,9 +155,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-28T09:05:38.002Z",
-        "lastUpdated": "2026-04-28T09:13:48.794Z"
+        "lastUpdated": "2026-05-01T10:32:12.955Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/integration/TopicApiIntegrationTest.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/integration/ArticleApiIntegrationTest.java"
     }
   },
   "pipeline": {
@@ -168,7 +168,7 @@
   "session": {
     "startedAt": "2026-04-04T08:15:47.494Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-05-01T10:03:11.041Z"
+    "lastActivity": "2026-05-01T10:32:12.956Z"
   },
   "history": [
     {
@@ -2916,6 +2916,78 @@
     {
       "timestamp": "2026-05-01T10:03:11.041Z",
       "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:26:05.230Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:26:14.169Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:26:34.499Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:28:19.454Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:28:26.116Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:28:32.133Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:28:37.048Z",
+      "feature": "integration",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:28:39.118Z",
+      "feature": "integration",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:28:44.013Z",
+      "feature": "integration",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:28:46.551Z",
+      "feature": "integration",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:31:19.573Z",
+      "feature": "domain",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:32:12.956Z",
+      "feature": "integration",
       "phase": "do",
       "action": "updated"
     }

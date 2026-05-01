@@ -32,7 +32,7 @@ public class Publisher {
     @Column(nullable = false)
     private PoliticalLeaning politicalLeaning;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String rssUrl;
 
     @Column(nullable = false, updatable = false)

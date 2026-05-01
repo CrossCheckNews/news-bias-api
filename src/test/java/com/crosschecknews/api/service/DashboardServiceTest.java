@@ -191,9 +191,9 @@ class DashboardServiceTest {
                 new Object[]{"NYT", 3L}
         ));
         given(topicRepository.countTopicsByCountry()).willReturn(List.of());
-        given(pipelineRunRepository.countByStatusAndStartedAtBetween(any(), any(), any())).willReturn(0L);
+        given(pipelineStepHistoryRepository.countByStatusAndStartedAtBetween(any(), any(), any())).willReturn(0L);
 
-        DashboardChartsResponse result = service.getCharts();
+        DashboardChartsResponse result = service.getCharts(LocalDate.now());
 
         assertThat(result.getArticlesByPublisher()).hasSize(2);
         assertThat(result.getArticlesByPublisher().get(0).getName()).isEqualTo("Fox News");
@@ -209,9 +209,9 @@ class DashboardServiceTest {
                 new Object[]{Country.US, 5L},
                 new Object[]{Country.KR, 2L}
         ));
-        given(pipelineRunRepository.countByStatusAndStartedAtBetween(any(), any(), any())).willReturn(0L);
+        given(pipelineStepHistoryRepository.countByStatusAndStartedAtBetween(any(), any(), any())).willReturn(0L);
 
-        DashboardChartsResponse result = service.getCharts();
+        DashboardChartsResponse result = service.getCharts(LocalDate.now());
 
         assertThat(result.getTopicsByCountry()).hasSize(2);
         assertThat(result.getTopicsByCountry().get(0).getName()).isEqualTo("US");
@@ -223,12 +223,12 @@ class DashboardServiceTest {
     void pipelineStatusCounts가_모든_PipelineStatus_값을_포함한다() {
         given(articleRepository.countArticlesByPublisher()).willReturn(List.of());
         given(topicRepository.countTopicsByCountry()).willReturn(List.of());
-        given(pipelineRunRepository.countByStatusAndStartedAtBetween(eq(PipelineStatus.RUNNING), any(), any())).willReturn(1L);
-        given(pipelineRunRepository.countByStatusAndStartedAtBetween(eq(PipelineStatus.SUCCESS), any(), any())).willReturn(10L);
-        given(pipelineRunRepository.countByStatusAndStartedAtBetween(eq(PipelineStatus.PARTIAL_FAILED), any(), any())).willReturn(3L);
-        given(pipelineRunRepository.countByStatusAndStartedAtBetween(eq(PipelineStatus.FAILED), any(), any())).willReturn(2L);
+        given(pipelineStepHistoryRepository.countByStatusAndStartedAtBetween(eq(PipelineStatus.RUNNING), any(), any())).willReturn(1L);
+        given(pipelineStepHistoryRepository.countByStatusAndStartedAtBetween(eq(PipelineStatus.SUCCESS), any(), any())).willReturn(10L);
+        given(pipelineStepHistoryRepository.countByStatusAndStartedAtBetween(eq(PipelineStatus.PARTIAL_FAILED), any(), any())).willReturn(3L);
+        given(pipelineStepHistoryRepository.countByStatusAndStartedAtBetween(eq(PipelineStatus.FAILED), any(), any())).willReturn(2L);
 
-        DashboardChartsResponse result = service.getCharts();
+        DashboardChartsResponse result = service.getCharts(LocalDate.now());
 
         assertThat(result.getPipelineStatusCounts()).hasSize(PipelineStatus.values().length);
         assertThat(result.getPipelineStatusCounts())
