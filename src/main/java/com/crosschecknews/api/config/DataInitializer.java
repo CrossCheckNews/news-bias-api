@@ -31,6 +31,7 @@ public class DataInitializer implements ApplicationRunner {
                                 .name(source.getPublisherName())
                                 .country(source.getCountry())
                                 .politicalLeaning(source.getPoliticalLeaning())
+                                .rssUrl(source.getRssUrl())
                                 .build();
                         log.info("Seeded publisher: {}", source.getPublisherName());
                         return publisherRepository.save(newPublisher);

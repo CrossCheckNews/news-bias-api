@@ -11,6 +11,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -18,10 +21,25 @@ public class ArticleService {
 
     private final ArticleRepository articleRepository;
 
-    public Page<ArticleResponse> findAll(Long publisherId, int page, int size) {
+    public Page<ArticleResponse> findAll(String headline, LocalDate date, int page, int size) {
         var pageable = PageUtil.of(page, size, Sort.Order.desc("publishedAt"));
-        if (publisherId != null) {
-            return articleRepository.findByPublisherId(publisherId, pageable)
+        boolean hasHeadline = headline != null && !headline.isBlank();
+        boolean hasDate = date != null;
+
+        if (hasHeadline && hasDate) {
+            LocalDateTime from = date.atStartOfDay();
+            LocalDateTime to = from.plusDays(1);
+            return articleRepository.findByHeadlineContainingIgnoreCaseAndPublishedAtBetween(headline, from, to, pageable)
+                    .map(ArticleResponse::from);
+        }
+        if (hasHeadline) {
+            return articleRepository.findByHeadlineContainingIgnoreCase(headline, pageable)
+                    .map(ArticleResponse::from);
+        }
+        if (hasDate) {
+            LocalDateTime from = date.atStartOfDay();
+            LocalDateTime to = from.plusDays(1);
+            return articleRepository.findByPublishedAtBetween(from, to, pageable)
                     .map(ArticleResponse::from);
         }
         return articleRepository.findAll(pageable).map(ArticleResponse::from);

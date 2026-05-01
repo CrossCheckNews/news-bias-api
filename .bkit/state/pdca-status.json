@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-05-01T03:27:16.551Z",
+  "lastUpdated": "2026-05-01T10:03:11.041Z",
   "activeFeatures": [
     "domain",
     "repository",
@@ -38,9 +38,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:27:01.636Z",
-        "lastUpdated": "2026-05-01T01:31:26.761Z"
+        "lastUpdated": "2026-05-01T09:12:49.876Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/repository/PipelineStepHistoryRepository.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/repository/ArticleRepository.java"
     },
     "dto": {
       "phase": "do",
@@ -51,9 +51,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:30:32.925Z",
-        "lastUpdated": "2026-05-01T00:35:40.885Z"
+        "lastUpdated": "2026-05-01T10:02:23.934Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/dto/PipelineRunLatestResponse.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/dto/PageResponse.java"
     },
     "exception": {
       "phase": "do",
@@ -77,9 +77,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:31:56.447Z",
-        "lastUpdated": "2026-05-01T03:26:46.834Z"
+        "lastUpdated": "2026-05-01T10:00:11.308Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/service/PipelineStepHistoryService.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/service/PublisherService.java"
     },
     "controller": {
       "phase": "do",
@@ -90,9 +90,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:36:43.382Z",
-        "lastUpdated": "2026-05-01T03:27:16.550Z"
+        "lastUpdated": "2026-05-01T10:03:11.040Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/controller/TopicController.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/controller/PipelineStepHistoryController.java"
     },
     "config": {
       "phase": "do",
@@ -168,7 +168,7 @@
   "session": {
     "startedAt": "2026-04-04T08:15:47.494Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-05-01T03:27:16.551Z"
+    "lastActivity": "2026-05-01T10:03:11.041Z"
   },
   "history": [
     {
@@ -2747,6 +2747,174 @@
     },
     {
       "timestamp": "2026-05-01T03:27:16.551Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T06:44:45.318Z",
+      "feature": "dto",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T06:45:06.587Z",
+      "feature": "dto",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T06:45:38.976Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T06:45:57.241Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T06:46:17.780Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T06:46:33.044Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T07:06:07.396Z",
+      "feature": "repository",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T07:07:01.742Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T07:08:11.158Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T07:08:21.728Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T07:08:59.991Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T07:09:43.987Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T08:56:05.144Z",
+      "feature": "repository",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T08:56:11.687Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T09:12:49.877Z",
+      "feature": "repository",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T09:13:05.526Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T09:13:28.465Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:00:11.317Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:00:23.247Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:02:23.935Z",
+      "feature": "dto",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:02:34.324Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:02:36.933Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:02:42.973Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:02:50.368Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:02:54.618Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:02:59.399Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:03:03.576Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T10:03:11.041Z",
       "feature": "controller",
       "phase": "do",
       "action": "updated"

@@ -189,6 +189,8 @@ public class DashboardDemoDataInitializer implements ApplicationRunner {
                 .targetType(targetType)
                 .targetName(targetName)
                 .processedCount(processedCount)
+                .successCount(status == PipelineStatus.SUCCESS ? processedCount : 0)
+                .failedCount(status == PipelineStatus.FAILED ? 1 : 0)
                 .errorType(errorType)
                 .errorMessage(errorMessage)
                 .message(message)

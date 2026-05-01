@@ -17,6 +17,8 @@ public class PipelineStepHistoryResponse {
     private String targetType;
     private String targetName;
     private int processedCount;
+    private int successCount;
+    private int failedCount;
     private String errorType;
     private String errorMessage;
     private String message;

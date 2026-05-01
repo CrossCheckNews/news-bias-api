@@ -17,6 +17,8 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 
     Page<Topic> findByStatusAndCreatedAtBetween(TopicStatus status, LocalDateTime from, LocalDateTime to, Pageable pageable);
 
+    long countByCreatedAtBetween(LocalDateTime from, LocalDateTime to);
+
     // 아직 AI 요약이 없는 ACTIVE 토픽 일괄 처리용
     List<Topic> findByAiSummaryIsNullAndStatus(TopicStatus status);
 

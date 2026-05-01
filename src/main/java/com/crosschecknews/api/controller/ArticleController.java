@@ -8,8 +8,11 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
+import com.crosschecknews.api.dto.PageResponse;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 /**
  * 기사 조회 API.
@@ -27,21 +30,47 @@ public class ArticleController {
 
     @Operation(
             summary = "기사 목록 조회",
-            description = "기사 목록을 반환합니다. publisherId로 필터링하거나 페이지네이션을 사용할 수 있습니다. " +
-                          "정렬은 publishedAt DESC로 고정입니다.",
+            description = """
+                기사 목록을 페이지 단위로 조회합니다.
+                headline 검색어와 publishedAt 기준 날짜 필터를 선택적으로 사용할 수 있습니다.
+                파라미터를 전달하지 않으면 전체 기사 목록을 조회합니다.
+                정렬은 publishedAt DESC로 고정됩니다.
+                """,
             parameters = {
-                    @Parameter(name = "page", description = "페이지 번호 (0부터 시작)", in = ParameterIn.QUERY, schema = @Schema(type = "integer", defaultValue = "0")),
-                    @Parameter(name = "size", description = "페이지 크기", in = ParameterIn.QUERY, schema = @Schema(type = "integer", defaultValue = "20"))
+                    @Parameter(
+                            name = "headline",
+                            description = "헤드라인 검색어. 입력하지 않으면 전체 조회",
+                            in = ParameterIn.QUERY,
+                            schema = @Schema(type = "string", example = "Trump")
+                    ),
+                    @Parameter(
+                            name = "date",
+                            description = "조회 날짜. publishedAt 기준이며 형식은 yyyy-MM-dd",
+                            in = ParameterIn.QUERY,
+                            schema = @Schema(type = "string", format = "date", example = "2026-05-01")
+                    ),
+                    @Parameter(
+                            name = "page",
+                            description = "페이지 번호. 0부터 시작",
+                            in = ParameterIn.QUERY,
+                            schema = @Schema(type = "integer", defaultValue = "0", minimum = "0")
+                    ),
+                    @Parameter(
+                            name = "size",
+                            description = "페이지 크기",
+                            in = ParameterIn.QUERY,
+                            schema = @Schema(type = "integer", defaultValue = "20", minimum = "1")
+                    )
             }
     )
     @GetMapping
-    public Page<ArticleResponse> findAll(
-            @Parameter(description = "언론사 ID 필터. 생략 시 전체 조회.")
-            @RequestParam(required = false) Long publisherId,
+    public PageResponse<ArticleResponse> findAll(
+            @RequestParam(required = false) String headline,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return articleService.findAll(publisherId, page, size);
+        return PageResponse.from(articleService.findAll(headline, date, page, size));
     }
 
     @Operation(summary = "기사 단건 조회", description = "ID로 특정 기사를 조회합니다.")

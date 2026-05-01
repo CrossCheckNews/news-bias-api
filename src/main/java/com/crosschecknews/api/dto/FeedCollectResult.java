@@ -16,6 +16,7 @@ public class FeedCollectResult {
     private boolean success;
     private int count;
     private List<ArticleCandidate> articles;
+    private String errorType;
     private String errorMessage;
     private LocalDateTime fetchedAt;
 
@@ -31,12 +32,17 @@ public class FeedCollectResult {
     }
 
     public static FeedCollectResult failure(FeedSource source, String errorMessage) {
+        return failure(source, "RSS_FEED_ERROR", errorMessage);
+    }
+
+    public static FeedCollectResult failure(FeedSource source, String errorType, String errorMessage) {
         return FeedCollectResult.builder()
                 .feedSourceCode(source.name())
                 .publisherName(source.getPublisherName())
                 .success(false)
                 .count(0)
                 .articles(List.of())
+                .errorType(errorType)
                 .errorMessage(errorMessage)
                 .fetchedAt(LocalDateTime.now())
                 .build();

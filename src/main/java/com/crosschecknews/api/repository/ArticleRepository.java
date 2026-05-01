@@ -12,7 +12,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ArticleRepository extends JpaRepository<Article, Long> {
-    Page<Article> findByPublisherId(Long publisherId, Pageable pageable);
+    Page<Article> findByFetchedAtBetween(LocalDateTime from, LocalDateTime to, Pageable pageable);
+
+    Page<Article> findByPublishedAtBetween(LocalDateTime from, LocalDateTime to, Pageable pageable);
+
+    Page<Article> findByHeadlineContainingIgnoreCase(String headline, Pageable pageable);
+
+    Page<Article> findByHeadlineContainingIgnoreCaseAndPublishedAtBetween(
+            String headline, LocalDateTime from, LocalDateTime to, Pageable pageable);
 
     // Priority 1 — rssGuid는 publisher 내에서만 고유
     boolean existsByPublisher_IdAndRssGuid(Long publisherId, String rssGuid);

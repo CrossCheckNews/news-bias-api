@@ -14,6 +14,7 @@ public class DashboardSummaryResponse {
     private long totalArticles;
     private long totalTopics;
     private long todayCollectedArticles;
+    private long successJobs;
     private long failedJobs;
     private LocalDateTime lastCollectedAt;
     private List<PipelineRunItem> recentRuns;
@@ -30,6 +31,8 @@ public class DashboardSummaryResponse {
         private int clusteredCount;
         private int summarizedCount;
         private int processedCount;
+        private int successCount;
+        private int failedCount;
         private String targetType;
         private String targetName;
         private String errorType;

@@ -2024,7 +2024,7 @@
   "publishedAt" : "2026-04-25T00:45:00"
 }, {
   "publisherCode" : "CHOSUN_WORLD",
-  "publisherName" : "Chosun Ilbo",
+  "publisherName" : null,
   "country" : "KR",
   "politicalLeaning" : "CONSERVATIVE",
   "category" : "WORLD",

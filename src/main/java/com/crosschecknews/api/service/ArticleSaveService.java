@@ -63,6 +63,7 @@ public class ArticleSaveService {
         int totalFetched = 0, totalSaved = 0, totalDuplicate = 0, totalFailed = 0;
         Map<DuplicateReason, Integer> reasonCounts = new EnumMap<>(DuplicateReason.class);
         List<FetchAndSaveResult.FeedSummary> summaries = new ArrayList<>();
+        List<FetchAndSaveResult.ArticleValidationError> validationErrors = new ArrayList<>();
 
         for (FeedCollectResult feedResult : feedResults) {
             if (!feedResult.isSuccess()) {
@@ -81,6 +82,22 @@ public class ArticleSaveService {
             int saved = 0, duplicates = 0, failed = 0;
 
             for (ArticleCandidate candidate : feedResult.getArticles()) {
+                String invalidReason = validateRequiredFields(candidate);
+                if (invalidReason != null) {
+                    failed++;
+                    String target = candidate.getUrl() != null ? candidate.getUrl()
+                            : (candidate.getRssGuid() != null ? candidate.getRssGuid() : "UNKNOWN");
+                    validationErrors.add(FetchAndSaveResult.ArticleValidationError.builder()
+                            .feedSourceCode(feedResult.getFeedSourceCode())
+                            .targetName(target)
+                            .errorType("MISSING_REQUIRED_FIELD")
+                            .errorMessage(invalidReason)
+                            .build());
+                    log.warn("필수 필드 누락 스킵 [{}] {} target={}",
+                            feedResult.getFeedSourceCode(), invalidReason, target);
+                    continue;
+                }
+
                 try {
                     NormalizedArticleCandidate normalized = normalizationService.normalize(candidate);
                     DuplicateCheckResult dupResult = deduplicationService.check(normalized);
@@ -128,6 +145,7 @@ public class ArticleSaveService {
                 .failedCount(totalFailed)
                 .duplicateReasonCounts(toStringKeyMap(reasonCounts))
                 .feeds(summaries)
+                .validationErrors(validationErrors)
                 .executedAt(LocalDateTime.now())
                 .build();
 
@@ -155,12 +173,26 @@ public class ArticleSaveService {
                 .build();
     }
 
+    private String validateRequiredFields(ArticleCandidate candidate) {
+        if (candidate.getHeadline() == null || candidate.getHeadline().isBlank()) {
+            return "headline이 null 또는 빈 값입니다";
+        }
+        if (candidate.getUrl() == null || candidate.getUrl().isBlank()) {
+            return "url이 null 또는 빈 값입니다";
+        }
+        if (candidate.getPublisherName() == null || candidate.getPublisherName().isBlank()) {
+            return "publisherName이 null 또는 빈 값입니다";
+        }
+        return null;
+    }
+
     private FetchAndSaveResult.FeedSummary failedFeedSummary(FeedCollectResult feedResult) {
         return FetchAndSaveResult.FeedSummary.builder()
                 .feedSourceCode(feedResult.getFeedSourceCode())
                 .publisherName(feedResult.getPublisherName())
                 .collectSuccess(false)
                 .fetched(0).saved(0).duplicates(0).failed(0)
+                .errorType(feedResult.getErrorType())
                 .errorMessage(feedResult.getErrorMessage())
                 .build();
     }
