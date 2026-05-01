@@ -3,7 +3,6 @@ package com.crosschecknews.api.service;
 import com.crosschecknews.api.client.FallbackAiClient;
 import com.crosschecknews.api.domain.*;
 import com.crosschecknews.api.dto.SummarizeResponse;
-import com.crosschecknews.api.exception.ResourceNotFoundException;
 import com.crosschecknews.api.repository.TopicArticleRepository;
 import com.crosschecknews.api.repository.TopicRepository;
 import org.junit.jupiter.api.Test;
@@ -68,47 +67,6 @@ class AiSummaryServiceTest {
         return TopicArticle.builder()
                 .id(1L).topic(topic).article(article)
                 .build();
-    }
-
-    // ── 단건 요약 ─────────────────────────────────────────────────────────────
-
-    @Test
-    void 존재하는_Topic을_요약하면_aiSummary가_저장된다() {
-        Topic topic = topic(1L);
-        TopicArticle ta = topicArticle(topic, "Fox News", "Trump wins election");
-
-        given(topicRepository.findById(1L)).willReturn(Optional.of(topic));
-        given(topicArticleRepository.findByTopicIdWithDetails(1L)).willReturn(List.of(ta));
-        given(promptBuilder.buildSummaryPrompt(List.of(ta))).willReturn("prompt text");
-        given(geminiClient.generate("prompt text")).willReturn("AI 요약 결과");
-        given(geminiClient.getModel()).willReturn("gemini-2.0-flash");
-
-        SummarizeResponse response = aiSummaryService.summarize(1L);
-
-        assertThat(response).isNotNull();
-        assertThat(topic.getAiSummary()).isEqualTo("AI 요약 결과");
-        assertThat(topic.getAiModel()).isEqualTo("gemini-2.0-flash");
-        assertThat(topic.getSummaryGeneratedAt()).isNotNull();
-    }
-
-    @Test
-    void 존재하지_않는_Topic_요약_시_예외를_던진다() {
-        given(topicRepository.findById(99L)).willReturn(Optional.empty());
-
-        assertThatThrownBy(() -> aiSummaryService.summarize(99L))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("99");
-    }
-
-    @Test
-    void 연결된_기사가_없는_Topic_요약_시_예외를_던진다() {
-        Topic topic = topic(1L);
-        given(topicRepository.findById(1L)).willReturn(Optional.of(topic));
-        given(topicArticleRepository.findByTopicIdWithDetails(1L)).willReturn(List.of());
-
-        assertThatThrownBy(() -> aiSummaryService.summarize(1L))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("no linked articles");
     }
 
     // ── 일괄 요약 ─────────────────────────────────────────────────────────────

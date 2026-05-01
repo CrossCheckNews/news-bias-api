@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class PublisherServiceTest {
@@ -70,21 +69,4 @@ class PublisherServiceTest {
                 .hasMessageContaining("99");
     }
 
-    @Test
-    void 언론사_삭제_성공() {
-        Publisher publisher = buildPublisher(1L);
-        given(publisherRepository.findById(1L)).willReturn(Optional.of(publisher));
-
-        publisherService.delete(1L);
-
-        verify(publisherRepository).delete(publisher);
-    }
-
-    @Test
-    void 존재하지_않는_언론사_삭제_실패() {
-        given(publisherRepository.findById(99L)).willReturn(Optional.empty());
-
-        assertThatThrownBy(() -> publisherService.delete(99L))
-                .isInstanceOf(ResourceNotFoundException.class);
-    }
 }

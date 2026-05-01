@@ -1,6 +1,6 @@
 {
   "version": "3.0",
-  "lastUpdated": "2026-05-01T10:32:12.956Z",
+  "lastUpdated": "2026-05-01T12:16:34.827Z",
   "activeFeatures": [
     "domain",
     "repository",
@@ -38,9 +38,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:27:01.636Z",
-        "lastUpdated": "2026-05-01T09:12:49.876Z"
+        "lastUpdated": "2026-05-01T12:16:00.379Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/repository/ArticleRepository.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/repository/TopicArticleRepository.java"
     },
     "dto": {
       "phase": "do",
@@ -77,9 +77,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:31:56.447Z",
-        "lastUpdated": "2026-05-01T10:26:34.499Z"
+        "lastUpdated": "2026-05-01T12:16:21.112Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/service/DashboardServiceTest.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/service/AiSummaryServiceTest.java"
     },
     "controller": {
       "phase": "do",
@@ -90,9 +90,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-04T08:36:43.382Z",
-        "lastUpdated": "2026-05-01T10:28:32.132Z"
+        "lastUpdated": "2026-05-01T12:14:58.807Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/controller/PipelineStepHistoryControllerTest.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/main/java/com/crosschecknews/api/controller/TopicController.java"
     },
     "config": {
       "phase": "do",
@@ -155,9 +155,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-04-28T09:05:38.002Z",
-        "lastUpdated": "2026-05-01T10:32:12.955Z"
+        "lastUpdated": "2026-05-01T12:16:34.826Z"
       },
-      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/integration/ArticleApiIntegrationTest.java"
+      "lastFile": "/Users/jeongjuhui/project/cross-check-news/news-bias-api/src/test/java/com/crosschecknews/api/integration/TopicApiIntegrationTest.java"
     }
   },
   "pipeline": {
@@ -168,7 +168,7 @@
   "session": {
     "startedAt": "2026-04-04T08:15:47.494Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-05-01T10:32:12.956Z"
+    "lastActivity": "2026-05-01T12:16:34.827Z"
   },
   "history": [
     {
@@ -2987,6 +2987,78 @@
     },
     {
       "timestamp": "2026-05-01T10:32:12.956Z",
+      "feature": "integration",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T12:06:39.738Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T12:09:22.316Z",
+      "feature": "integration",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T12:14:58.808Z",
+      "feature": "controller",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T12:15:25.570Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T12:15:30.061Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T12:15:38.612Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T12:15:49.668Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T12:15:52.496Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T12:16:00.380Z",
+      "feature": "repository",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T12:16:16.371Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T12:16:21.113Z",
+      "feature": "service",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-01T12:16:34.826Z",
       "feature": "integration",
       "phase": "do",
       "action": "updated"

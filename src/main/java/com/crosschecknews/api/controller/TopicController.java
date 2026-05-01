@@ -32,13 +32,6 @@ public class TopicController {
     private final TopicClusteringService topicClusteringService;
     private final AiSummaryService aiSummaryService;
 
-    @Operation(summary = "토픽 생성", description = "동일한 이슈를 다루는 기사들을 묶는 토픽을 생성합니다.")
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public TopicResponse create(@Valid @RequestBody TopicRequest request) {
-        return topicService.create(request);
-    }
-
     @Operation(
             summary = "토픽 목록 조회",
             description = """
@@ -156,51 +149,6 @@ public class TopicController {
     @GetMapping("/{id}")
     public TopicDetailResponse findById(@PathVariable Long id) {
         return topicService.findById(id);
-    }
-
-    @Operation(summary = "토픽 수정", description = "토픽 제목, 설명, 상태를 수정합니다.")
-    @PutMapping("/{id}")
-    public TopicResponse update(@PathVariable Long id, @Valid @RequestBody TopicRequest request) {
-        return topicService.update(id, request);
-    }
-
-    @Operation(summary = "토픽 삭제", description = "토픽을 삭제합니다. 연결된 기사는 삭제되지 않습니다.")
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        topicService.delete(id);
-    }
-
-    @Operation(summary = "언론사 관점 비교 조회",
-            description = "토픽에 연결된 기사 목록을 AI 브리핑과 함께 반환합니다. " +
-                          "groupBy=leaning 또는 groupBy=country 지정 시 groups 필드가 추가됩니다. " +
-                          "미지정 시 country → politicalLeaning → publishedAt(최신순) 기준으로 정렬된 flat 목록을 반환합니다.")
-    @GetMapping("/{id}/articles")
-    public TopicComparisonResponse getComparisonView(
-            @PathVariable Long id,
-            @RequestParam(required = false) String groupBy
-    ) {
-        return topicService.getComparisonView(id, groupBy);
-    }
-
-    @Operation(summary = "토픽에 기사 연결", description = "기존 기사를 토픽에 연결합니다.")
-    @PostMapping("/{id}/articles")
-    @ResponseStatus(HttpStatus.CREATED)
-    public void linkArticle(@PathVariable Long id, @Valid @RequestBody TopicArticleLinkRequest request) {
-        topicService.linkArticle(id, request.getArticleId());
-    }
-
-    @Operation(summary = "토픽-기사 연결 해제", description = "토픽에서 특정 기사의 연결을 제거합니다.")
-    @DeleteMapping("/{id}/articles/{articleId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void unlinkArticle(@PathVariable Long id, @PathVariable Long articleId) {
-        topicService.unlinkArticle(id, articleId);
-    }
-
-    @Operation(summary = "토픽 단건 AI 요약", description = "토픽에 연결된 기사 헤드라인을 기반으로 AI 브리핑을 생성합니다.")
-    @PostMapping("/{id}/summarize")
-    public SummarizeResponse summarize(@PathVariable Long id) {
-        return aiSummaryService.summarize(id);
     }
 
     @Operation(summary = "미요약 토픽 일괄 AI 요약",
