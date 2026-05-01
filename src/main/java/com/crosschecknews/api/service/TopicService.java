@@ -31,19 +31,6 @@ public class TopicService {
     private final TopicArticleRepository topicArticleRepository;
     private final ArticleRepository articleRepository;
 
-    @Transactional
-    public TopicResponse create(TopicRequest request) {
-        Topic topic = Topic.builder()
-                .title(request.getTitle())
-                .summary(request.getSummary())
-                .articleCategory(request.getArticleCategory())
-                .status(request.getStatus())
-                .startDate(request.getStartDate())
-                .build();
-        Topic saved = topicRepository.save(topic);
-        return TopicResponse.empty(saved);
-    }
-
     public Page<TopicResponse> findAll(TopicStatus status, LocalDate date, int page, int size) {
         var pageable = PageUtil.of(page, size, Sort.Order.desc("createdAt"));
         Page<Topic> topics;
@@ -75,19 +62,6 @@ public class TopicService {
         Topic topic = getTopic(topicId);
         List<TopicArticle> links = topicArticleRepository.findByTopicIdWithDetails(topicId);
         return TopicDetailResponse.from(topic, links);
-    }
-
-    @Transactional
-    public TopicResponse update(Long topicId, TopicRequest request) {
-        Topic topic = getTopic(topicId);
-        topic.update(request.getTitle(), request.getSummary(), request.getStatus(), request.getStartDate());
-        List<TopicArticle> links = topicArticleRepository.findByTopicIdWithDetails(topicId);
-        return TopicResponse.from(topic, links);
-    }
-
-    @Transactional
-    public void delete(Long topicId) {
-        topicRepository.delete(getTopic(topicId));
     }
 
     @Transactional

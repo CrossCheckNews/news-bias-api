@@ -3,7 +3,6 @@ package com.crosschecknews.api.service;
 import com.crosschecknews.api.domain.*;
 import com.crosschecknews.api.dto.TopicDetailResponse;
 import com.crosschecknews.api.exception.ResourceNotFoundException;
-import com.crosschecknews.api.repository.ArticleRepository;
 import com.crosschecknews.api.repository.TopicArticleRepository;
 import com.crosschecknews.api.repository.TopicRepository;
 import org.junit.jupiter.api.Test;
@@ -36,7 +35,6 @@ class TopicServiceTest {
 
     @Mock TopicRepository        topicRepository;
     @Mock TopicArticleRepository topicArticleRepository;
-    @Mock ArticleRepository      articleRepository;
 
     @InjectMocks TopicService topicService;
 

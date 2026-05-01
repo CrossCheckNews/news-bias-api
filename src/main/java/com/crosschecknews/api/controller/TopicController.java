@@ -32,13 +32,6 @@ public class TopicController {
     private final TopicClusteringService topicClusteringService;
     private final AiSummaryService aiSummaryService;
 
-    @Operation(summary = "토픽 생성", description = "동일한 이슈를 다루는 기사들을 묶는 토픽을 생성합니다.")
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public TopicResponse create(@Valid @RequestBody TopicRequest request) {
-        return topicService.create(request);
-    }
-
     @Operation(
             summary = "토픽 목록 조회",
             description = """
@@ -156,19 +149,6 @@ public class TopicController {
     @GetMapping("/{id}")
     public TopicDetailResponse findById(@PathVariable Long id) {
         return topicService.findById(id);
-    }
-
-    @Operation(summary = "토픽 수정", description = "토픽 제목, 설명, 상태를 수정합니다.")
-    @PutMapping("/{id}")
-    public TopicResponse update(@PathVariable Long id, @Valid @RequestBody TopicRequest request) {
-        return topicService.update(id, request);
-    }
-
-    @Operation(summary = "토픽 삭제", description = "토픽을 삭제합니다. 연결된 기사는 삭제되지 않습니다.")
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        topicService.delete(id);
     }
 
     @Operation(summary = "언론사 관점 비교 조회",
