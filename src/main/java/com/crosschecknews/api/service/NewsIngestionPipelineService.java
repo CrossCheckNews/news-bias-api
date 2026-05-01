@@ -12,7 +12,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -244,6 +246,16 @@ public class NewsIngestionPipelineService {
             log.error("[Stage 5] AI 요약 전체 실패: {}", e.getMessage(), e);
             return new SummarizeOutcome(List.of(), true);
         }
+    }
+
+    public PipelineRunLatestResponse getLatestRunDate() {
+        String runDate = pipelineRunRepository.findTopByOrderByStartedAtDesc()
+                .map(run -> run.getStartedAt().toLocalDate().format(DateTimeFormatter.ISO_LOCAL_DATE))
+                .orElse(null);
+        return PipelineRunLatestResponse.builder()
+                .runDate(runDate)
+                .today(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE))
+                .build();
     }
 
     private record ClusteringOutcome(List<ClusteringResult> results, boolean hadFailure) {}

@@ -4,6 +4,7 @@ import com.crosschecknews.api.domain.ArticleCategory;
 import com.crosschecknews.api.dto.ClusteringResult;
 import com.crosschecknews.api.dto.FetchAndSaveResult;
 import com.crosschecknews.api.dto.PipelineResult;
+import com.crosschecknews.api.dto.PipelineRunLatestResponse;
 import com.crosschecknews.api.dto.SummarizeResponse;
 import com.crosschecknews.api.service.NewsIngestionPipelineService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -108,6 +110,34 @@ class PipelineControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"fromHours\": 169}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void 최근_파이프라인_실행일을_오늘날짜와_함께_반환한다() throws Exception {
+        given(pipelineService.getLatestRunDate()).willReturn(
+                PipelineRunLatestResponse.builder()
+                        .runDate("2026-04-30")
+                        .today("2026-05-01")
+                        .build());
+
+        mockMvc.perform(get("/api/v1/pipeline/latest-run-date"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.runDate").value("2026-04-30"))
+                .andExpect(jsonPath("$.today").value("2026-05-01"));
+    }
+
+    @Test
+    void 파이프라인_실행_이력이_없으면_runDate가_null이다() throws Exception {
+        given(pipelineService.getLatestRunDate()).willReturn(
+                PipelineRunLatestResponse.builder()
+                        .runDate(null)
+                        .today("2026-05-01")
+                        .build());
+
+        mockMvc.perform(get("/api/v1/pipeline/latest-run-date"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.runDate").doesNotExist())
+                .andExpect(jsonPath("$.today").value("2026-05-01"));
     }
 
     @Test

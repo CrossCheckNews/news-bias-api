@@ -2,11 +2,13 @@ package com.crosschecknews.api.controller;
 
 import com.crosschecknews.api.dto.PipelineRequest;
 import com.crosschecknews.api.dto.PipelineResult;
+import com.crosschecknews.api.dto.PipelineRunLatestResponse;
 import com.crosschecknews.api.service.NewsIngestionPipelineService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,5 +38,16 @@ public class PipelineController {
             @Valid @RequestBody(required = false) PipelineRequest request
     ) {
         return pipelineService.run(request);
+    }
+
+    @Operation(
+            summary = "최근 파이프라인 실행일 조회",
+            description = "PIPELINE_RUN 테이블의 가장 최근 실행 내역 1건의 날짜(runDate)와 " +
+                          "API 호출 날짜(today)를 'YYYY-MM-DD' 형식으로 반환합니다. " +
+                          "실행 이력이 없으면 runDate는 null입니다."
+    )
+    @GetMapping("/latest-run-date")
+    public PipelineRunLatestResponse getLatestRunDate() {
+        return pipelineService.getLatestRunDate();
     }
 }
